@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum StageName {
+  NAO_INICIADO
+  MODELAGEM_NEGOCIO
+  MODELAGEM_TI
+  DESENVOLVIMENTO
+  HOMOLOGACAO
+  FINALIZADO
+}
+
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedProjects   Project[]       @relation("ProjectOwner")
+  projectMembers  ProjectMember[]
+  comments        Comment[]
+  auditLogs       AuditLog[]
+  blockedStages   ProjectStage[]  @relation("BlockedBy")
+
+  @@map("users")
+}
+
+model Project {
+  id           String    @id @default(uuid())
+  title        String
+  description  String?
+  priority     Priority  @default(MEDIUM)
+  ownerId      String
+  currentStage StageName @default(NAO_INICIADO)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  owner    User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  stages   ProjectStage[]
+  members  ProjectMember[]
+  comments Comment[]
+
+  @@map("projects")
+}
+
+model ProjectStage {
+  id               String      @id @default(uuid())
+  projectId        String
+  stageName        StageName
+  plannedStartDate DateTime
+  plannedEndDate   DateTime
+  actualStartDate  DateTime?
+  actualEndDate    DateTime?
+  status           StageStatus @default(PENDING)
+  blockReason      String?
+  blockedAt        DateTime?
+  blockedById      String?
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  blockedBy User?   @relation("BlockedBy", fields: [blockedById], references: [id])
+
+  @@unique([projectId, stageName])
+  @@map("project_stages")
+}
+
+model ProjectMember {
+  id         String   @id @default(uuid())
+  projectId  String
+  userId     String
+  assignedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
