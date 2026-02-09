@@ -32,8 +32,8 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 const ROLE_COLORS: Record<Role, string> = {
-  ADMIN: 'bg-purple-100 text-purple-800',
-  MANAGER: 'bg-blue-100 text-blue-800',
+  ADMIN: 'bg-orange-100 text-orange-800',
+  MANAGER: 'bg-amber-100 text-amber-800',
   MEMBER: 'bg-gray-100 text-gray-800',
 };
 
@@ -55,7 +55,7 @@ export function Users() {
       const data = await getUsers();
       setUsers(data);
     } catch (err) {
-      console.error('Erro ao carregar usuarios:', err);
+      console.error('Erro ao carregar usuários:', err);
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +76,7 @@ export function Users() {
       setNewUser({ name: '', email: '', password: '', role: 'MEMBER' });
       fetchUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar usuario');
+      setError(err instanceof Error ? err.message : 'Erro ao criar usuário');
     } finally {
       setIsSubmitting(false);
     }
@@ -102,17 +102,17 @@ export function Users() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Usuarios</h1>
+        <h1 className="text-2xl font-bold">Usuários</h1>
         <Dialog open={showNewUser} onOpenChange={setShowNewUser}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
-              Novo Usuario
+              Novo Usuário
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo Usuario</DialogTitle>
+              <DialogTitle>Novo Usuário</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateUser} className="space-y-4">
               {error && (
@@ -187,7 +187,7 @@ export function Users() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Usuarios</CardTitle>
+          <CardTitle>Lista de Usuários</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

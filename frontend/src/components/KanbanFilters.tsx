@@ -66,7 +66,7 @@ export function KanbanFilters({
         }
       >
         <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Responsavel" />
+          <SelectValue placeholder="Responsável" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos</SelectItem>

@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Kanban } from './pages/Kanban';
 import { ProjectForm } from './pages/ProjectForm';
 import { Users } from './pages/Users';
+import { Trash } from './pages/Trash';
 
 function App() {
   return (
@@ -17,8 +18,14 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Kanban />} />
-              <Route path="/projects/new" element={<ProjectForm />} />
               <Route path="/users" element={<Users />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+            <Route element={<Layout />}>
+              <Route path="/projects/new" element={<ProjectForm />} />
+              <Route path="/trash" element={<Trash />} />
             </Route>
           </Route>
 

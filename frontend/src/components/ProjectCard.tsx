@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils';
 interface ProjectCardProps {
   project: Project;
   onClick?: () => void;
+  draggable?: boolean;
 }
 
-export function ProjectCard({ project, onClick }: ProjectCardProps) {
+export function ProjectCard({ project, onClick, draggable = true }: ProjectCardProps) {
   const {
     attributes,
     listeners,
@@ -22,7 +23,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: project.id });
+  } = useSortable({ id: project.id, disabled: !draggable });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -35,6 +36,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const isDelayed =
     currentStage &&
     currentStage.status !== 'COMPLETED' &&
+    currentStage.plannedEndDate &&
     isPast(new Date(currentStage.plannedEndDate));
   const isBlocked = currentStage?.status === 'BLOCKED';
 
@@ -54,7 +56,8 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
       {...attributes}
       {...listeners}
       className={cn(
-        'cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow',
+        'hover:shadow-md transition-shadow',
+        draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         isDragging && 'opacity-50',
         isDelayed && 'border-red-400 border-2',
         isBlocked && 'border-yellow-400 border-2'
@@ -85,7 +88,10 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>
-              Prazo: {format(new Date(currentStage.plannedEndDate), 'dd/MM/yyyy', { locale: ptBR })}
+              Prazo:{' '}
+              {currentStage.plannedEndDate
+                ? format(new Date(currentStage.plannedEndDate), 'dd/MM/yyyy', { locale: ptBR })
+                : 'A definir'}
             </span>
           </div>
         )}

@@ -8,15 +8,16 @@ interface KanbanColumnProps {
   stage: StageName;
   projects: Project[];
   onProjectClick: (project: Project) => void;
+  canDrag?: (project: Project) => boolean;
 }
 
-export function KanbanColumn({ stage, projects, onProjectClick }: KanbanColumnProps) {
+export function KanbanColumn({ stage, projects, onProjectClick, canDrag }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
 
   const columnColors: Record<StageName, string> = {
     NAO_INICIADO: 'bg-gray-100',
-    MODELAGEM_NEGOCIO: 'bg-blue-50',
-    MODELAGEM_TI: 'bg-purple-50',
+    MODELAGEM_NEGOCIO: 'bg-orange-50',
+    MODELAGEM_TI: 'bg-amber-50',
     DESENVOLVIMENTO: 'bg-yellow-50',
     HOMOLOGACAO: 'bg-orange-50',
     FINALIZADO: 'bg-green-50',
@@ -24,10 +25,10 @@ export function KanbanColumn({ stage, projects, onProjectClick }: KanbanColumnPr
 
   const headerColors: Record<StageName, string> = {
     NAO_INICIADO: 'bg-gray-200',
-    MODELAGEM_NEGOCIO: 'bg-blue-200',
-    MODELAGEM_TI: 'bg-purple-200',
+    MODELAGEM_NEGOCIO: 'bg-orange-200',
+    MODELAGEM_TI: 'bg-amber-200',
     DESENVOLVIMENTO: 'bg-yellow-200',
-    HOMOLOGACAO: 'bg-orange-200',
+    HOMOLOGACAO: 'bg-orange-300',
     FINALIZADO: 'bg-green-200',
   };
 
@@ -58,6 +59,7 @@ export function KanbanColumn({ stage, projects, onProjectClick }: KanbanColumnPr
               key={project.id}
               project={project}
               onClick={() => onProjectClick(project)}
+              draggable={canDrag ? canDrag(project) : true}
             />
           ))}
         </SortableContext>

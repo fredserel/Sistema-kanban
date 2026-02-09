@@ -13,8 +13,18 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['Nunito', 'sans-serif'],
+    },
     extend: {
       colors: {
+        conectenvios: {
+          orange: '#FF6900',
+          yellow: '#FFCD00',
+          red: '#D71400',
+          'dark-gray': '#4B4B4B',
+          'mid-gray': '#969696',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

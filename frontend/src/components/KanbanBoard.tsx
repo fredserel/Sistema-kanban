@@ -57,9 +57,17 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
     return projects.filter((project) => project.currentStage === stage);
   };
 
+  const canDrag = (project: Project) => {
+    if (!user) return false;
+    if (user.role === 'MEMBER') return false;
+    if (user.role === 'ADMIN') return true;
+    // MANAGER can only drag their own projects
+    return project.ownerId === user.id;
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const project = projects.find((p) => p.id === event.active.id);
-    if (project) {
+    if (project && canDrag(project)) {
       setActiveProject(project);
     }
   };
@@ -127,6 +135,7 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
               stage={stage}
               projects={getProjectsByStage(stage)}
               onProjectClick={onProjectClick}
+              canDrag={canDrag}
             />
           ))}
         </div>
@@ -139,9 +148,9 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
       <Dialog open={showJustificationDialog} onOpenChange={setShowJustificationDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Justificativa necessaria</DialogTitle>
+            <DialogTitle>Justificativa necessária</DialogTitle>
             <DialogDescription>
-              Esta movimentacao requer uma justificativa. Por favor, explique o motivo.
+              Esta movimentação requer uma justificativa. Por favor, explique o motivo.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -151,7 +160,7 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
                 id="justification"
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
-                placeholder="Explique o motivo da movimentacao..."
+                placeholder="Explique o motivo da movimentação..."
                 rows={4}
               />
             </div>

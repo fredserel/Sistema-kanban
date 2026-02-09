@@ -1,5 +1,6 @@
 import prisma from './prisma.service.js';
 import { createAuditLog } from './audit.service.js';
+import { assertOwnerOrAdmin } from './project.service.js';
 import { StageName, StageStatus, Role } from '../types/index.js';
 
 const STAGE_ORDER: StageName[] = [
@@ -23,7 +24,7 @@ export async function getProjectStages(projectId: string) {
       },
     },
     orderBy: {
-      plannedStartDate: 'asc',
+      stageName: 'asc',
     },
   });
 
@@ -38,7 +39,8 @@ export async function updateStage(
     actualStartDate?: Date;
     actualEndDate?: Date;
   },
-  userId: string
+  userId: string,
+  userRole: Role
 ) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
@@ -47,6 +49,8 @@ export async function updateStage(
   if (!stage) {
     throw new Error('Etapa não encontrada');
   }
+
+  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
 
   if (data.plannedStartDate && data.plannedEndDate) {
     if (new Date(data.plannedStartDate) > new Date(data.plannedEndDate)) {
@@ -83,7 +87,7 @@ export async function updateStage(
   return updated;
 }
 
-export async function completeStage(stageId: string, userId: string) {
+export async function completeStage(stageId: string, userId: string, userRole: Role) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
     include: { project: true },
@@ -93,6 +97,8 @@ export async function completeStage(stageId: string, userId: string) {
     throw new Error('Etapa não encontrada');
   }
 
+  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
+
   if (stage.status === 'COMPLETED') {
     throw new Error('Etapa já está concluída');
   }
@@ -101,7 +107,7 @@ export async function completeStage(stageId: string, userId: string) {
     throw new Error('Etapa está bloqueada. Desbloqueie antes de concluir.');
   }
 
-  // Verificar se etapa anterior está completa
+  // Verificar se etapa anterior esta completa
   const currentIndex = STAGE_ORDER.indexOf(stage.stageName);
   if (currentIndex > 0) {
     const previousStageName = STAGE_ORDER[currentIndex - 1];
@@ -128,7 +134,7 @@ export async function completeStage(stageId: string, userId: string) {
     },
   });
 
-  // Avançar para próxima etapa se houver
+  // Avancar para proxima etapa se houver
   const nextIndex = currentIndex + 1;
   if (nextIndex < STAGE_ORDER.length) {
     const nextStageName = STAGE_ORDER[nextIndex];
@@ -165,7 +171,7 @@ export async function completeStage(stageId: string, userId: string) {
   return updated;
 }
 
-export async function blockStage(stageId: string, reason: string, userId: string) {
+export async function blockStage(stageId: string, reason: string, userId: string, userRole: Role) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
   });
@@ -173,6 +179,8 @@ export async function blockStage(stageId: string, reason: string, userId: string
   if (!stage) {
     throw new Error('Etapa não encontrada');
   }
+
+  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
 
   if (stage.status === 'COMPLETED') {
     throw new Error('Não é possível bloquear uma etapa já concluída');
@@ -207,7 +215,7 @@ export async function blockStage(stageId: string, reason: string, userId: string
   return updated;
 }
 
-export async function unblockStage(stageId: string, userId: string) {
+export async function unblockStage(stageId: string, userId: string, userRole: Role) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
   });
@@ -215,6 +223,8 @@ export async function unblockStage(stageId: string, userId: string) {
   if (!stage) {
     throw new Error('Etapa não encontrada');
   }
+
+  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
 
   if (stage.status !== 'BLOCKED') {
     throw new Error('Etapa não está bloqueada');
@@ -248,6 +258,8 @@ export async function moveToStage(
   userRole: Role,
   justification?: string
 ) {
+  await assertOwnerOrAdmin(projectId, userId, userRole);
+
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: { stages: true },
@@ -260,14 +272,14 @@ export async function moveToStage(
   const currentIndex = STAGE_ORDER.indexOf(project.currentStage);
   const targetIndex = STAGE_ORDER.indexOf(targetStageName);
 
-  // Verificar se é retorno (voltar para etapa anterior)
+  // Verificar se e retorno (voltar para etapa anterior)
   if (targetIndex < currentIndex) {
     if (!justification || justification.trim().length === 0) {
       throw new Error('Justificativa é obrigatória para retornar a uma etapa anterior');
     }
   }
 
-  // Verificar pulo de etapas (não sequencial)
+  // Verificar pulo de etapas (nao sequencial)
   if (targetIndex > currentIndex + 1) {
     if (userRole !== 'ADMIN') {
       throw new Error('Apenas administradores podem pular etapas');
@@ -277,7 +289,7 @@ export async function moveToStage(
     }
   }
 
-  // Verificar se todas as etapas anteriores estão completas (para avanço normal)
+  // Verificar se todas as etapas anteriores estao completas (para avanco normal)
   if (targetIndex > currentIndex) {
     for (let i = 0; i < targetIndex; i++) {
       const stageName = STAGE_ORDER[i];
@@ -292,7 +304,7 @@ export async function moveToStage(
   const oldStage = project.stages.find(s => s.stageName === project.currentStage);
 
   if (targetIndex > currentIndex) {
-    // Avançando - marcar etapa atual como completa
+    // Avancando - marcar etapa atual como completa
     if (oldStage && oldStage.status === 'IN_PROGRESS') {
       await prisma.projectStage.update({
         where: { id: oldStage.id },
@@ -303,7 +315,7 @@ export async function moveToStage(
       });
     }
   } else if (targetIndex < currentIndex) {
-    // Retornando - resetar etapas posteriores ao destino (mantendo datas planejadas)
+    // Retornando - resetar etapas posteriores ao destino
     for (let i = targetIndex + 1; i <= currentIndex; i++) {
       const stageName = STAGE_ORDER[i];
       const stage = project.stages.find(s => s.stageName === stageName);
@@ -314,7 +326,6 @@ export async function moveToStage(
             status: 'PENDING',
             actualStartDate: null,
             actualEndDate: null,
-            // plannedStartDate e plannedEndDate são mantidas (não modificadas)
           },
         });
       }
@@ -329,8 +340,8 @@ export async function moveToStage(
       data: {
         status: 'IN_PROGRESS',
         actualStartDate: targetIndex < currentIndex
-          ? targetStage.actualStartDate  // Retornando: manter data original
-          : (targetStage.actualStartDate || new Date()), // Avançando: usar existente ou nova
+          ? targetStage.actualStartDate
+          : (targetStage.actualStartDate || new Date()),
         actualEndDate: null,
       },
     });

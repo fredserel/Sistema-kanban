@@ -63,6 +63,7 @@ model Project {
   currentStage StageName @default(NAO_INICIADO)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   owner    User            @relation("ProjectOwner", fields: [ownerId], references: [id])
   stages   ProjectStage[]
@@ -76,8 +77,8 @@ model ProjectStage {
   id               String      @id @default(uuid())
   projectId        String
   stageName        StageName
-  plannedStartDate DateTime
-  plannedEndDate   DateTime
+  plannedStartDate DateTime?
+  plannedEndDate   DateTime?
   actualStartDate  DateTime?
   actualEndDate    DateTime?
   status           StageStatus @default(PENDING)

@@ -30,16 +30,21 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sistema Kanban</CardTitle>
-          <CardDescription>Gestao de Projetos</CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+      <Card className="w-full max-w-md shadow-lg border-t-4 border-t-conectenvios-orange">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img src="/logo.png" alt="Conectenvios" className="h-12" />
+          </div>
+          <div>
+            <CardTitle className="text-2xl text-conectenvios-dark-gray">Projetos Conectenvios</CardTitle>
+            <CardDescription>Gestão de Projetos</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">{error}</div>
+              <div className="bg-red-50 text-conectenvios-red p-3 rounded-md text-sm">{error}</div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -67,7 +72,7 @@ export function Login() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Usuarios de teste:</p>
+            <p>Usuários de teste:</p>
             <p>admin@sistema.com / admin123</p>
             <p>gerente@sistema.com / gerente123</p>
             <p>membro@sistema.com / membro123</p>

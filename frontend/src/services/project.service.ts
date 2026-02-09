@@ -1,5 +1,5 @@
 import api from './api';
-import { Project, CreateProjectInput, Priority, StageName, User } from '../types';
+import { Project, CreateProjectInput, UpdateProjectInput, Priority, StageName, User } from '../types';
 
 export interface ProjectFilters {
   ownerId?: string;
@@ -35,7 +35,7 @@ export async function createProject(data: CreateProjectInput): Promise<Project> 
 
 export async function updateProject(
   id: string,
-  data: { title?: string; description?: string; priority?: Priority }
+  data: UpdateProjectInput
 ): Promise<Project> {
   const response = await api.put<Project>(`/projects/${id}`, data);
   return response.data;
@@ -72,4 +72,22 @@ export async function addComment(projectId: string, content: string): Promise<vo
 export async function getUsers(): Promise<User[]> {
   const response = await api.get<User[]>('/users');
   return response.data;
+}
+
+export async function changeProjectOwner(projectId: string, ownerId: string): Promise<Project> {
+  const response = await api.patch<Project>(`/projects/${projectId}/owner`, { ownerId });
+  return response.data;
+}
+
+export async function getDeletedProjects(): Promise<Project[]> {
+  const response = await api.get<Project[]>('/projects/trash');
+  return response.data;
+}
+
+export async function restoreProject(id: string): Promise<void> {
+  await api.post(`/projects/${id}/restore`);
+}
+
+export async function permanentDeleteProject(id: string): Promise<void> {
+  await api.delete(`/projects/${id}/permanent`);
 }

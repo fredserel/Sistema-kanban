@@ -26,10 +26,10 @@ export interface ProjectStage {
   id: string;
   projectId: string;
   stageName: StageName;
-  plannedStartDate: string;
-  plannedEndDate: string;
-  actualStartDate?: string;
-  actualEndDate?: string;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
   status: StageStatus;
   blockReason?: string;
   blockedAt?: string;
@@ -72,6 +72,7 @@ export interface Project {
   currentStage: StageName;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
   owner: {
     id: string;
     name: string;
@@ -84,35 +85,40 @@ export interface Project {
 
 export interface CreateProjectInput {
   title: string;
+  managerId: string;
+}
+
+export interface UpdateProjectInput {
+  title?: string;
   description?: string;
-  priority: Priority;
-  stages: {
+  priority?: Priority;
+  stages?: {
     stageName: StageName;
-    plannedStartDate: string;
-    plannedEndDate: string;
+    plannedStartDate?: string;
+    plannedEndDate?: string;
   }[];
 }
 
 export const STAGE_LABELS: Record<StageName, string> = {
-  NAO_INICIADO: 'Nao Iniciado',
-  MODELAGEM_NEGOCIO: 'Modelagem de Negocio',
+  NAO_INICIADO: 'Não Iniciado',
+  MODELAGEM_NEGOCIO: 'Modelagem de Negócio',
   MODELAGEM_TI: 'Modelagem de TI',
   DESENVOLVIMENTO: 'Desenvolvimento',
-  HOMOLOGACAO: 'Homologacao',
+  HOMOLOGACAO: 'Homologação',
   FINALIZADO: 'Finalizado',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
   LOW: 'Baixa',
-  MEDIUM: 'Media',
+  MEDIUM: 'Média',
   HIGH: 'Alta',
-  CRITICAL: 'Critica',
+  CRITICAL: 'Crítica',
 };
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
   LOW: 'bg-green-100 text-green-800',
-  MEDIUM: 'bg-yellow-100 text-yellow-800',
-  HIGH: 'bg-orange-100 text-orange-800',
+  MEDIUM: 'bg-amber-100 text-amber-800',
+  HIGH: 'bg-orange-200 text-orange-900',
   CRITICAL: 'bg-red-100 text-red-800',
 };
 

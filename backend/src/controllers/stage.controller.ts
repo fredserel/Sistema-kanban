@@ -32,7 +32,8 @@ export async function updateStageController(req: AuthenticatedRequest, res: Resp
     const stage = await updateStage(
       id,
       { plannedStartDate, plannedEndDate, actualStartDate, actualEndDate },
-      req.user.userId
+      req.user.userId,
+      req.user.role
     );
 
     res.json(stage);
@@ -49,7 +50,7 @@ export async function completeStageController(req: AuthenticatedRequest, res: Re
     }
 
     const { id } = req.params;
-    const stage = await completeStage(id, req.user.userId);
+    const stage = await completeStage(id, req.user.userId, req.user.role);
     res.json(stage);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao concluir etapa';
@@ -70,7 +71,7 @@ export async function blockStageController(req: AuthenticatedRequest, res: Respo
       return res.status(400).json({ error: 'Motivo do bloqueio é obrigatório' });
     }
 
-    const stage = await blockStage(id, reason, req.user.userId);
+    const stage = await blockStage(id, reason, req.user.userId, req.user.role);
     res.json(stage);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao bloquear etapa';
@@ -85,7 +86,7 @@ export async function unblockStageController(req: AuthenticatedRequest, res: Res
     }
 
     const { id } = req.params;
-    const stage = await unblockStage(id, req.user.userId);
+    const stage = await unblockStage(id, req.user.userId, req.user.role);
     res.json(stage);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao desbloquear etapa';
