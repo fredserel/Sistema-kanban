@@ -1,0 +1,12 @@
+# Environment files (contain secrets)
+.env
+
+# SSL certificates
+certbot/conf/
+certbot/www/
+
+# Database backups
+backups/*.sql.gz
+
+# Logs
+*.log
