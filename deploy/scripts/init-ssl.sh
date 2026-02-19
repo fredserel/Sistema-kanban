@@ -28,7 +28,7 @@ fi
 
 source "$DEPLOY_DIR/.env"
 
-DOMAIN=${DOMAIN:-projetos.conectenvios.com.br}
+DOMAIN=${DOMAIN:-kanban.conectenvios.com.br}
 EMAIL=${CERTBOT_EMAIL:-ti@conectenvios.com.br}
 
 cd "$DEPLOY_DIR"
@@ -70,7 +70,7 @@ if [ -f "certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
 server {
     listen 80;
     listen [::]:80;
-    server_name projetos.conectenvios.com.br;
+    server_name kanban.conectenvios.com.br;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -85,10 +85,10 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name projetos.conectenvios.com.br;
+    server_name kanban.conectenvios.com.br;
 
-    ssl_certificate /etc/letsencrypt/live/projetos.conectenvios.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/projetos.conectenvios.com.br/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/kanban.conectenvios.com.br/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kanban.conectenvios.com.br/privkey.pem;
 
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;

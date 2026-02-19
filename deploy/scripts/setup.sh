@@ -75,7 +75,7 @@ JWT_SECRET=${JWT_SECRET}
 JWT_EXPIRES_IN=24h
 
 # DOMAIN
-DOMAIN=projetos.conectenvios.com.br
+DOMAIN=kanban.conectenvios.com.br
 CERTBOT_EMAIL=ti@conectenvios.com.br
 EOF
 

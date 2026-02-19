@@ -66,7 +66,7 @@ nano .env
 | `DB_PASSWORD` | Senha do banco (forte!) | `SuaSenhaForte123!@#` |
 | `DB_NAME` | Nome do banco | `conectenvios_db` |
 | `JWT_SECRET` | Chave secreta JWT (64 chars) | Use: `openssl rand -base64 64` |
-| `DOMAIN` | Domínio da aplicação | `projetos.conectenvios.com.br` |
+| `DOMAIN` | Domínio da aplicação | `kanban.conectenvios.com.br` |
 | `CERTBOT_EMAIL` | Email para Let's Encrypt | `ti@conectenvios.com.br` |
 
 ### 4. Primeiro Deploy (com SSL)
@@ -210,15 +210,15 @@ docker-compose -f docker-compose.prod.yml exec backend npx prisma db push
 
 ```bash
 # Verificar se o domínio resolve para o IP correto
-dig projetos.conectenvios.com.br
+dig kanban.conectenvios.com.br
 
 # Verificar certificados
-ls -la certbot/conf/live/projetos.conectenvios.com.br/
+ls -la certbot/conf/live/kanban.conectenvios.com.br/
 
 # Re-gerar certificado
 docker-compose -f docker-compose.prod.yml run --rm certbot certonly --webroot \
     --webroot-path=/var/www/certbot \
-    -d projetos.conectenvios.com.br
+    -d kanban.conectenvios.com.br
 ```
 
 ## Suporte

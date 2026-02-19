@@ -38,7 +38,7 @@ O script irá:
 
 ## Pronto!
 
-Acesse: **https://projetos.conectenvios.com.br**
+Acesse: **https://kanban.conectenvios.com.br**
 
 ### Usuários Padrão
 

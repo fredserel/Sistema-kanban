@@ -44,7 +44,7 @@ services:
       context: ../frontend
       dockerfile: ../deploy/Dockerfile.frontend
       args:
-        VITE_API_URL: https://projetos.conectenvios.com.br/api
+        VITE_API_URL: https://kanban.conectenvios.com.br/api
     container_name: conectenvios_frontend
     restart: always
     networks:
