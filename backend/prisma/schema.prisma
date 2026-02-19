@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -106,8 +106,8 @@ model User {
 
 model Project {
   id           String    @id @default(uuid())
-  title        String
-  description  String?
+  title        String    @db.VarChar(255)
+  description  String?   @db.Text
   priority     Priority  @default(MEDIUM)
   ownerId      String
   currentStage StageName @default(NAO_INICIADO)
@@ -132,7 +132,7 @@ model ProjectStage {
   actualStartDate  DateTime?
   actualEndDate    DateTime?
   status           StageStatus @default(PENDING)
-  blockReason      String?
+  blockReason      String?     @db.Text
   blockedAt        DateTime?
   blockedById      String?
 
@@ -160,7 +160,7 @@ model Comment {
   id        String   @id @default(uuid())
   projectId String
   userId    String
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -172,11 +172,11 @@ model Comment {
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String
-  action     String
-  entityType String
+  action     String   @db.VarChar(100)
+  entityType String   @db.VarChar(100)
   entityId   String
-  oldValue   String?
-  newValue   String?
+  oldValue   String?  @db.Text
+  newValue   String?  @db.Text
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])

@@ -2,7 +2,7 @@
 set -e
 
 # ===========================================
-# CONECTENVIOS - RESTORE SCRIPT
+# CONECTENVIOS - RESTORE SCRIPT (MariaDB)
 # ===========================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -65,15 +65,12 @@ docker-compose -f docker-compose.prod.yml stop backend
 log_info "Restoring database from $BACKUP_FILE..."
 
 # Drop and recreate database
-docker-compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS $DB_NAME;"
-
-docker-compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "$DB_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
+docker-compose -f docker-compose.prod.yml exec -T mariadb \
+    mysql -u root -p"$DB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME;"
 
 # Restore from backup
-gunzip -c "$BACKUP_PATH" | docker-compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "$DB_USER" -d "$DB_NAME"
+gunzip -c "$BACKUP_PATH" | docker-compose -f docker-compose.prod.yml exec -T mariadb \
+    mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME"
 
 log_info "Starting backend..."
 docker-compose -f docker-compose.prod.yml start backend

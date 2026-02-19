@@ -2,7 +2,7 @@
 set -e
 
 # ===========================================
-# CONECTENVIOS - BACKUP SCRIPT
+# CONECTENVIOS - BACKUP SCRIPT (MariaDB)
 # ===========================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,9 +32,9 @@ cd "$DEPLOY_DIR"
 
 log_info "Starting database backup..."
 
-# Create backup
-docker-compose -f docker-compose.prod.yml exec -T postgres \
-    pg_dump -U "$DB_USER" -d "$DB_NAME" | gzip > "$BACKUP_DIR/$BACKUP_FILE"
+# Create backup using mysqldump
+docker-compose -f docker-compose.prod.yml exec -T mariadb \
+    mysqldump -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" | gzip > "$BACKUP_DIR/$BACKUP_FILE"
 
 # Get backup size
 BACKUP_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_FILE" | awk '{print $5}')

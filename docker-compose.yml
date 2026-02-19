@@ -1,18 +1,19 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: kanban_postgres
+  mariadb:
+    image: mariadb:10.11
+    container_name: kanban_mariadb
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: kanban_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: kanban_db
+      MYSQL_USER: kanban
+      MYSQL_PASSWORD: kanban123
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mariadb_data:/var/lib/mysql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,7 +22,7 @@ services:
     build: ./backend
     container_name: kanban_backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kanban_db?schema=public
+      DATABASE_URL: mysql://kanban:kanban123@mariadb:3306/kanban_db
       JWT_SECRET: sua-chave-secreta-muito-segura-aqui-mude-em-producao
       JWT_EXPIRES_IN: 24h
       PORT: 3001
@@ -29,7 +30,7 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      postgres:
+      mariadb:
         condition: service_healthy
     restart: unless-stopped
 
@@ -43,4 +44,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  mariadb_data:
