@@ -1,7 +1,7 @@
 import prisma from './prisma.service.js';
 import { createAuditLog } from './audit.service.js';
 import { assertOwnerOrAdmin } from './project.service.js';
-import { StageName, StageStatus, Role } from '../types/index.js';
+import { StageName, StageStatus } from '../types/index.js';
 
 const STAGE_ORDER: StageName[] = [
   'NAO_INICIADO',
@@ -40,7 +40,7 @@ export async function updateStage(
     actualEndDate?: Date;
   },
   userId: string,
-  userRole: Role
+  permissions: string[]
 ) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
@@ -50,7 +50,7 @@ export async function updateStage(
     throw new Error('Etapa não encontrada');
   }
 
-  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
+  await assertOwnerOrAdmin(stage.projectId, userId, permissions);
 
   if (data.plannedStartDate && data.plannedEndDate) {
     if (new Date(data.plannedStartDate) > new Date(data.plannedEndDate)) {
@@ -87,7 +87,7 @@ export async function updateStage(
   return updated;
 }
 
-export async function completeStage(stageId: string, userId: string, userRole: Role) {
+export async function completeStage(stageId: string, userId: string, permissions: string[]) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
     include: { project: true },
@@ -97,7 +97,7 @@ export async function completeStage(stageId: string, userId: string, userRole: R
     throw new Error('Etapa não encontrada');
   }
 
-  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
+  await assertOwnerOrAdmin(stage.projectId, userId, permissions);
 
   if (stage.status === 'COMPLETED') {
     throw new Error('Etapa já está concluída');
@@ -171,7 +171,7 @@ export async function completeStage(stageId: string, userId: string, userRole: R
   return updated;
 }
 
-export async function blockStage(stageId: string, reason: string, userId: string, userRole: Role) {
+export async function blockStage(stageId: string, reason: string, userId: string, permissions: string[]) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
   });
@@ -180,7 +180,7 @@ export async function blockStage(stageId: string, reason: string, userId: string
     throw new Error('Etapa não encontrada');
   }
 
-  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
+  await assertOwnerOrAdmin(stage.projectId, userId, permissions);
 
   if (stage.status === 'COMPLETED') {
     throw new Error('Não é possível bloquear uma etapa já concluída');
@@ -215,7 +215,7 @@ export async function blockStage(stageId: string, reason: string, userId: string
   return updated;
 }
 
-export async function unblockStage(stageId: string, userId: string, userRole: Role) {
+export async function unblockStage(stageId: string, userId: string, permissions: string[]) {
   const stage = await prisma.projectStage.findUnique({
     where: { id: stageId },
   });
@@ -224,7 +224,7 @@ export async function unblockStage(stageId: string, userId: string, userRole: Ro
     throw new Error('Etapa não encontrada');
   }
 
-  await assertOwnerOrAdmin(stage.projectId, userId, userRole);
+  await assertOwnerOrAdmin(stage.projectId, userId, permissions);
 
   if (stage.status !== 'BLOCKED') {
     throw new Error('Etapa não está bloqueada');
@@ -255,10 +255,13 @@ export async function moveToStage(
   projectId: string,
   targetStageName: StageName,
   userId: string,
-  userRole: Role,
+  permissions: string[],
   justification?: string
 ) {
-  await assertOwnerOrAdmin(projectId, userId, userRole);
+  await assertOwnerOrAdmin(projectId, userId, permissions);
+
+  // Verificar se tem permissao de admin (pode pular etapas)
+  const isAdmin = permissions.includes('stages.manage') || permissions.includes('projects.delete');
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -281,7 +284,7 @@ export async function moveToStage(
 
   // Verificar pulo de etapas (nao sequencial)
   if (targetIndex > currentIndex + 1) {
-    if (userRole !== 'ADMIN') {
+    if (!isAdmin) {
       throw new Error('Apenas administradores podem pular etapas');
     }
     if (!justification || justification.trim().length === 0) {
@@ -294,7 +297,7 @@ export async function moveToStage(
     for (let i = 0; i < targetIndex; i++) {
       const stageName = STAGE_ORDER[i];
       const stage = project.stages.find(s => s.stageName === stageName);
-      if (stage && stage.status !== 'COMPLETED' && userRole !== 'ADMIN') {
+      if (stage && stage.status !== 'COMPLETED' && !isAdmin) {
         throw new Error(`Etapa ${stageName} deve ser concluída antes de avançar`);
       }
     }

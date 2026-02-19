@@ -41,6 +41,35 @@ export async function assertOwnerOrHasPermission(
   return project;
 }
 
+// Alias para compatibilidade com stage.service.ts
+export async function assertOwnerOrAdmin(
+  projectId: string,
+  userId: string,
+  userRoleOrPermissions: string | string[]
+) {
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) {
+    throw new Error('Projeto nao encontrado');
+  }
+
+  // Se for array, usar como permissoes
+  if (Array.isArray(userRoleOrPermissions)) {
+    const hasUpdatePermission = userRoleOrPermissions.includes('projects.update');
+    const isOwner = project.ownerId === userId;
+    if (!hasUpdatePermission && !isOwner) {
+      throw new Error('Acesso negado. Voce nao e o responsavel deste projeto.');
+    }
+  } else {
+    // Se for string (role antiga), verificar se e ADMIN ou owner
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(userRoleOrPermissions);
+    const isOwner = project.ownerId === userId;
+    if (!isAdmin && !isOwner) {
+      throw new Error('Acesso negado. Voce nao e o responsavel deste projeto.');
+    }
+  }
+  return project;
+}
+
 // Criacao de projeto pelo ADMIN
 export async function createProject(
   input: {
