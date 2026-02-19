@@ -43,7 +43,9 @@ export function ProjectForm() {
 
   useEffect(() => {
     getUsers()
-      .then((users) => setManagers(users.filter((u) => u.role === 'MANAGER')))
+      .then((users) => setManagers(users.filter((u) =>
+        u.roles?.some((r) => r.name === 'MANAGER' || r.name === 'ADMIN' || r.name === 'SUPER_ADMIN')
+      )))
       .catch(console.error);
   }, []);
 
