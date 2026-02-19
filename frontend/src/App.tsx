@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Kanban } from './pages/Kanban';
 import { ProjectForm } from './pages/ProjectForm';
 import { Users } from './pages/Users';
+import { Roles } from './pages/Roles';
 import { Trash } from './pages/Trash';
 
 function App() {
@@ -33,6 +34,13 @@ function App() {
           <Route element={<ProtectedRoute requiredPermissions={['users.read']} />}>
             <Route element={<Layout />}>
               <Route path="/users" element={<Users />} />
+            </Route>
+          </Route>
+
+          {/* Rotas que requerem permissao de visualizar perfis */}
+          <Route element={<ProtectedRoute requiredPermissions={['roles.read']} />}>
+            <Route element={<Layout />}>
+              <Route path="/roles" element={<Roles />} />
             </Route>
           </Route>
 
