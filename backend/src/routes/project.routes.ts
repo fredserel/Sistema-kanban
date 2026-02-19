@@ -15,36 +15,35 @@ import {
 } from '../controllers/project.controller.js';
 import { getStagesController } from '../controllers/stage.controller.js';
 import { moveStageController } from '../controllers/stage.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
-import { Role } from '../types/index.js';
+import { authenticate, requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Todas as rotas exigem autenticação
+// Todas as rotas exigem autenticacao
 router.use(authenticate);
 
 // CRUD de Projetos
-router.get('/', getProjectsController);
-router.get('/trash', authorize(Role.ADMIN), getDeletedProjectsController);
-router.get('/:id', getProjectController);
-router.post('/', authorize(Role.ADMIN), createProjectController);
-router.put('/:id', authorize(Role.ADMIN, Role.MANAGER), updateProjectController);
-router.delete('/:id', authorize(Role.ADMIN), deleteProjectController);
-router.post('/:id/restore', authorize(Role.ADMIN), restoreProjectController);
-router.delete('/:id/permanent', authorize(Role.ADMIN), permanentDeleteProjectController);
+router.get('/', requirePermission('projects.read'), getProjectsController);
+router.get('/trash', requirePermission('trash.read'), getDeletedProjectsController);
+router.get('/:id', requirePermission('projects.read'), getProjectController);
+router.post('/', requirePermission('projects.create'), createProjectController);
+router.put('/:id', requirePermission('projects.update'), updateProjectController);
+router.delete('/:id', requirePermission('projects.delete'), deleteProjectController);
+router.post('/:id/restore', requirePermission('trash.restore'), restoreProjectController);
+router.delete('/:id/permanent', requirePermission('trash.delete'), permanentDeleteProjectController);
 
 // Membros do Projeto
-router.post('/:id/members', authorize(Role.ADMIN, Role.MANAGER), addMemberController);
-router.delete('/:id/members/:userId', authorize(Role.ADMIN, Role.MANAGER), removeMemberController);
+router.post('/:id/members', requirePermission('projects.update'), addMemberController);
+router.delete('/:id/members/:userId', requirePermission('projects.update'), removeMemberController);
 
-// Alterar Responsável
-router.patch('/:id/owner', authorize(Role.ADMIN), changeOwnerController);
+// Alterar Responsavel
+router.patch('/:id/owner', requirePermission('projects.update'), changeOwnerController);
 
 // Etapas do Projeto
-router.get('/:id/stages', getStagesController);
-router.post('/:id/move', authorize(Role.ADMIN, Role.MANAGER), moveStageController);
+router.get('/:id/stages', requirePermission('stages.read'), getStagesController);
+router.post('/:id/move', requirePermission('stages.update'), moveStageController);
 
-// Comentários
-router.post('/:id/comments', addCommentController);
+// Comentarios - qualquer usuario autenticado com acesso ao projeto pode comentar
+router.post('/:id/comments', requirePermission('projects.read'), addCommentController);
 
 export default router;

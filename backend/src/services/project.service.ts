@@ -1,6 +1,7 @@
 import prisma from './prisma.service.js';
 import { createAuditLog } from './audit.service.js';
-import { StageName, Priority, Role } from '../types/index.js';
+import { StageName, Priority } from '../types/index.js';
+import { hasPermission } from '../middlewares/auth.middleware.js';
 
 const STAGE_ORDER: StageName[] = [
   'NAO_INICIADO',
@@ -20,21 +21,39 @@ export interface ProjectFilters {
   delayed?: boolean;
 }
 
-// Helper: verifica se o usuario e o owner do projeto ou ADMIN
-export async function assertOwnerOrAdmin(projectId: string, userId: string, userRole: Role) {
+// Helper: verifica se o usuario e o owner do projeto ou tem permissao de update
+export async function assertOwnerOrHasPermission(
+  projectId: string,
+  userId: string,
+  userPermissions: string[]
+) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) {
-    throw new Error('Projeto não encontrado');
+    throw new Error('Projeto nao encontrado');
   }
-  if (userRole !== 'ADMIN' && project.ownerId !== userId) {
-    throw new Error('Acesso negado. Você não é o responsável deste projeto.');
+
+  const hasUpdatePermission = userPermissions.includes('projects.update');
+  const isOwner = project.ownerId === userId;
+
+  if (!hasUpdatePermission && !isOwner) {
+    throw new Error('Acesso negado. Voce nao e o responsavel deste projeto.');
   }
   return project;
 }
 
-// Criacao de projeto pelo ADMIN (apenas titulo + gerente)
+// Criacao de projeto pelo ADMIN
 export async function createProject(
-  input: { title: string; managerId: string },
+  input: {
+    title: string;
+    managerId: string;
+    description?: string;
+    priority?: Priority;
+    stages?: Array<{
+      stageName: StageName;
+      plannedStartDate?: string;
+      plannedEndDate?: string;
+    }>;
+  },
   adminUserId: string
 ) {
   const manager = await prisma.user.findUnique({ where: { id: input.managerId } });
@@ -45,19 +64,26 @@ export async function createProject(
     throw new Error('Usuário selecionado não é um gerente');
   }
 
+  // Preparar dados das etapas com datas planejadas se fornecidas
+  const stagesData = STAGE_ORDER.map((stageName) => {
+    const stageInput = input.stages?.find(s => s.stageName === stageName);
+    return {
+      stageName,
+      plannedStartDate: stageInput?.plannedStartDate ? new Date(stageInput.plannedStartDate) : null,
+      plannedEndDate: stageInput?.plannedEndDate ? new Date(stageInput.plannedEndDate) : null,
+      status: stageName === 'NAO_INICIADO' ? 'IN_PROGRESS' as const : 'PENDING' as const,
+    };
+  });
+
   const project = await prisma.project.create({
     data: {
       title: input.title,
+      description: input.description || null,
       ownerId: input.managerId,
       currentStage: 'NAO_INICIADO',
-      priority: 'MEDIUM',
+      priority: input.priority || 'MEDIUM',
       stages: {
-        create: STAGE_ORDER.map((stageName) => ({
-          stageName,
-          plannedStartDate: null,
-          plannedEndDate: null,
-          status: stageName === 'NAO_INICIADO' ? 'IN_PROGRESS' as const : 'PENDING' as const,
-        })),
+        create: stagesData,
       },
     },
     include: {
@@ -236,9 +262,9 @@ export async function updateProject(
     }>;
   },
   userId: string,
-  userRole: Role
+  userPermissions: string[]
 ) {
-  await assertOwnerOrAdmin(projectId, userId, userRole);
+  await assertOwnerOrHasPermission(projectId, userId, userPermissions);
 
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) {
@@ -394,9 +420,9 @@ export async function addProjectMember(
   projectId: string,
   memberId: string,
   addedById: string,
-  addedByRole: Role
+  addedByPermissions: string[]
 ) {
-  await assertOwnerOrAdmin(projectId, addedById, addedByRole);
+  await assertOwnerOrHasPermission(projectId, addedById, addedByPermissions);
 
   const existingMember = await prisma.projectMember.findUnique({
     where: {
@@ -442,9 +468,9 @@ export async function removeProjectMember(
   projectId: string,
   memberId: string,
   removedById: string,
-  removedByRole: Role
+  removedByPermissions: string[]
 ) {
-  await assertOwnerOrAdmin(projectId, removedById, removedByRole);
+  await assertOwnerOrHasPermission(projectId, removedById, removedByPermissions);
 
   const member = await prisma.projectMember.findUnique({
     where: {

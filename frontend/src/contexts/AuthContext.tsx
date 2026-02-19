@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Role } from '../types';
+import { User } from '../types';
 import * as authService from '../services/auth.service';
 
 interface AuthContextType {
@@ -8,7 +8,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  hasRole: (...roles: Role[]) => boolean;
+  hasPermission: (...permissions: string[]) => boolean;
+  hasAllPermissions: (...permissions: string[]) => boolean;
+  hasRole: (roleName: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,9 +56,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const hasRole = (...roles: Role[]) => {
-    if (!user) return false;
-    return roles.includes(user.role);
+  // Verifica se o usuario tem pelo menos uma das permissoes
+  const hasPermission = (...permissions: string[]) => {
+    if (!user || !user.permissions) return false;
+    return permissions.some(perm => user.permissions?.includes(perm));
+  };
+
+  // Verifica se o usuario tem todas as permissoes
+  const hasAllPermissions = (...permissions: string[]) => {
+    if (!user || !user.permissions) return false;
+    return permissions.every(perm => user.permissions?.includes(perm));
+  };
+
+  // Verifica se o usuario tem uma role especifica
+  const hasRole = (roleName: string) => {
+    if (!user || !user.roles) return false;
+    return user.roles.some(role => role.name === roleName);
   };
 
   return (
@@ -67,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         logout,
+        hasPermission,
+        hasAllPermissions,
         hasRole,
       }}
     >

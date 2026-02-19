@@ -21,13 +21,16 @@ export async function createProjectController(req: AuthenticatedRequest, res: Re
       return res.status(401).json({ error: 'Não autenticado' });
     }
 
-    const { title, managerId } = req.body;
+    const { title, managerId, description, priority, stages } = req.body;
 
     if (!title || !managerId) {
       return res.status(400).json({ error: 'Título e gerente são obrigatórios' });
     }
 
-    const project = await createProject({ title, managerId }, req.user.userId);
+    const project = await createProject(
+      { title, managerId, description, priority, stages },
+      req.user.userId
+    );
     res.status(201).json(project);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao criar projeto';
@@ -85,7 +88,7 @@ export async function updateProjectController(req: AuthenticatedRequest, res: Re
       id,
       { title, description, priority, stages },
       req.user.userId,
-      req.user.role
+      req.user.permissions || []
     );
     res.json(project);
   } catch (error) {
@@ -122,7 +125,7 @@ export async function addMemberController(req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ error: 'ID do usuário é obrigatório' });
     }
 
-    const member = await addProjectMember(id, userId, req.user.userId, req.user.role);
+    const member = await addProjectMember(id, userId, req.user.userId, req.user.permissions || []);
     res.status(201).json(member);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao adicionar membro';
@@ -137,7 +140,7 @@ export async function removeMemberController(req: AuthenticatedRequest, res: Res
     }
 
     const { id, userId } = req.params;
-    await removeProjectMember(id, userId, req.user.userId, req.user.role);
+    await removeProjectMember(id, userId, req.user.userId, req.user.permissions || []);
     res.status(204).send();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro ao remover membro';

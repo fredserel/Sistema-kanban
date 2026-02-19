@@ -15,16 +15,30 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
 
+          {/* Rotas protegidas - qualquer usuario autenticado */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Kanban />} />
+            </Route>
+          </Route>
+
+          {/* Rotas que requerem permissao de criar projetos */}
+          <Route element={<ProtectedRoute requiredPermissions={['projects.create']} />}>
+            <Route element={<Layout />}>
+              <Route path="/projects/new" element={<ProjectForm />} />
+            </Route>
+          </Route>
+
+          {/* Rotas que requerem permissao de visualizar usuarios */}
+          <Route element={<ProtectedRoute requiredPermissions={['users.read']} />}>
+            <Route element={<Layout />}>
               <Route path="/users" element={<Users />} />
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+          {/* Rotas que requerem permissao de visualizar lixeira */}
+          <Route element={<ProtectedRoute requiredPermissions={['trash.read']} />}>
             <Route element={<Layout />}>
-              <Route path="/projects/new" element={<ProjectForm />} />
               <Route path="/trash" element={<Trash />} />
             </Route>
           </Route>

@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import stageRoutes from './routes/stage.routes.js';
 import userRoutes from './routes/user.routes.js';
+import roleRoutes from './routes/role.routes.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/stages', stageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

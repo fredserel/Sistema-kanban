@@ -10,23 +10,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LayoutDashboard, Plus, Users, LogOut, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Plus, Users, LogOut, Trash2, Shield } from 'lucide-react';
 
 export function Layout() {
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const location = useLocation();
 
   const navItems = [
-    { href: '/', label: 'Kanban', icon: LayoutDashboard },
+    { href: '/', label: 'Kanban', icon: LayoutDashboard, permission: 'projects.read' },
   ];
 
-  if (hasRole('ADMIN')) {
-    navItems.push({ href: '/projects/new', label: 'Novo Projeto', icon: Plus });
+  if (hasPermission('projects.create')) {
+    navItems.push({ href: '/projects/new', label: 'Novo Projeto', icon: Plus, permission: 'projects.create' });
   }
 
-  if (hasRole('ADMIN')) {
-    navItems.push({ href: '/users', label: 'Usuários', icon: Users });
-    navItems.push({ href: '/trash', label: 'Lixeira', icon: Trash2 });
+  if (hasPermission('users.read')) {
+    navItems.push({ href: '/users', label: 'Usuarios', icon: Users, permission: 'users.read' });
+  }
+
+  if (hasPermission('roles.read')) {
+    navItems.push({ href: '/roles', label: 'Perfis', icon: Shield, permission: 'roles.read' });
+  }
+
+  if (hasPermission('trash.read')) {
+    navItems.push({ href: '/trash', label: 'Lixeira', icon: Trash2, permission: 'trash.read' });
   }
 
   const getInitials = (name: string) => {
@@ -36,6 +43,11 @@ export function Layout() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getRoleDisplay = () => {
+    if (!user?.roles || user.roles.length === 0) return 'Sem perfil';
+    return user.roles.map(r => r.displayName).join(', ');
   };
 
   return (
@@ -84,7 +96,7 @@ export function Layout() {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">{user?.name}</p>
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user?.role.toLowerCase()}</p>
+                    <p className="text-xs text-muted-foreground">{getRoleDisplay()}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

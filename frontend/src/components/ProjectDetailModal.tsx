@@ -80,7 +80,7 @@ export function ProjectDetailModal({
   onOpenChange,
   onUpdate,
 }: ProjectDetailModalProps) {
-  const { user: authUser, hasRole } = useAuth();
+  const { user: authUser, hasPermission } = useAuth();
   const [blockReason, setBlockReason] = useState('');
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -98,9 +98,10 @@ export function ProjectDetailModal({
     { stageName: StageName; plannedStartDate: string; plannedEndDate: string }[]
   >([]);
 
-  const isAdmin = hasRole('ADMIN');
+  const canManageUsers = hasPermission('users.update');
+  const canDeleteProjects = hasPermission('projects.delete');
   const isOwner = authUser?.id === project?.ownerId;
-  const canEdit = isAdmin || isOwner;
+  const canEdit = hasPermission('projects.update') || isOwner;
 
   useEffect(() => {
     if (open && canEdit) {
@@ -379,7 +380,7 @@ export function ProjectDetailModal({
                 <Pencil className="h-4 w-4" />
                 Editar Projeto
               </Button>
-              {isAdmin && (
+              {canDeleteProjects && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -570,7 +571,7 @@ export function ProjectDetailModal({
               <User className="h-4 w-4" />
               Responsável do Projeto
             </h4>
-            {isAdmin ? (
+            {canManageUsers ? (
               <div className="flex items-center gap-2">
                 <Select value={selectedOwner} onValueChange={setSelectedOwner}>
                   <SelectTrigger className="w-[250px]">

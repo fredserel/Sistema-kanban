@@ -43,7 +43,7 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
   } | null>(null);
   const [justification, setJustification] = useState('');
   const [moveError, setMoveError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -59,9 +59,11 @@ export function KanbanBoard({ projects, onMoveProject, onProjectClick }: KanbanB
 
   const canDrag = (project: Project) => {
     if (!user) return false;
-    if (user.role === 'MEMBER') return false;
-    if (user.role === 'ADMIN') return true;
-    // MANAGER can only drag their own projects
+    // Precisa de permissao de atualizar etapas
+    if (!hasPermission('stages.update')) return false;
+    // Quem tem permissao de excluir projetos pode mover qualquer um
+    if (hasPermission('projects.delete')) return true;
+    // Caso contrario, so pode mover seus proprios projetos
     return project.ownerId === user.id;
   };
 

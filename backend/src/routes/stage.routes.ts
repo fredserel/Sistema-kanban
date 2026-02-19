@@ -5,18 +5,17 @@ import {
   blockStageController,
   unblockStageController,
 } from '../controllers/stage.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
-import { Role } from '../types/index.js';
+import { authenticate, requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Todas as rotas exigem autenticação
+// Todas as rotas exigem autenticacao
 router.use(authenticate);
 
-// Operações em etapas
-router.put('/:id', authorize(Role.ADMIN, Role.MANAGER), updateStageController);
-router.post('/:id/complete', authorize(Role.ADMIN, Role.MANAGER), completeStageController);
-router.post('/:id/block', authorize(Role.ADMIN, Role.MANAGER), blockStageController);
-router.post('/:id/unblock', authorize(Role.ADMIN, Role.MANAGER), unblockStageController);
+// Operacoes em etapas
+router.put('/:id', requirePermission('stages.update'), updateStageController);
+router.post('/:id/complete', requirePermission('stages.complete'), completeStageController);
+router.post('/:id/block', requirePermission('stages.block'), blockStageController);
+router.post('/:id/unblock', requirePermission('stages.block'), unblockStageController);
 
 export default router;

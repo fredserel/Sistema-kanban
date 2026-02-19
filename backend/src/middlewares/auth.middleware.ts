@@ -1,12 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { verifyToken } from '../services/auth.service.js';
-import { AuthenticatedRequest, Role } from '../types/index.js';
+import { AuthenticatedRequest } from '../types/index.js';
 
+// Middleware de autenticacao
 export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token não fornecido' });
+    return res.status(401).json({ error: 'Token nao fornecido' });
   }
 
   const token = authHeader.substring(7);
@@ -16,38 +17,65 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
     req.user = payload;
     next();
   } catch {
-    return res.status(401).json({ error: 'Token inválido' });
+    return res.status(401).json({ error: 'Token invalido' });
   }
 }
 
-export function authorize(...allowedRoles: Role[]) {
+// Middleware de autorizacao por permissao
+// Uso: requirePermission('projects.create') ou requirePermission('projects.create', 'projects.update')
+export function requirePermission(...requiredPermissions: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Não autenticado' });
+      return res.status(401).json({ error: 'Nao autenticado' });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Acesso negado. Permissão insuficiente.' });
+    const userPermissions = req.user.permissions || [];
+
+    // Verifica se o usuario tem pelo menos uma das permissoes requeridas
+    const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+
+    if (!hasPermission) {
+      return res.status(403).json({
+        error: 'Acesso negado. Permissao insuficiente.',
+        required: requiredPermissions,
+      });
     }
 
     next();
   };
 }
 
-export function authorizeOwnerOrRoles(ownerIdExtractor: (req: AuthenticatedRequest) => string | undefined, ...allowedRoles: Role[]) {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// Middleware que verifica se o usuario tem TODAS as permissoes requeridas
+export function requireAllPermissions(...requiredPermissions: string[]) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Não autenticado' });
+      return res.status(401).json({ error: 'Nao autenticado' });
     }
 
-    const ownerId = ownerIdExtractor(req);
-    const isOwner = ownerId && ownerId === req.user.userId;
-    const hasRole = allowedRoles.includes(req.user.role);
+    const userPermissions = req.user.permissions || [];
 
-    if (!isOwner && !hasRole) {
-      return res.status(403).json({ error: 'Acesso negado. Permissão insuficiente.' });
+    // Verifica se o usuario tem TODAS as permissoes requeridas
+    const hasAllPermissions = requiredPermissions.every(perm => userPermissions.includes(perm));
+
+    if (!hasAllPermissions) {
+      return res.status(403).json({
+        error: 'Acesso negado. Permissoes insuficientes.',
+        required: requiredPermissions,
+      });
     }
 
     next();
   };
+}
+
+// Helper para verificar permissao no codigo (nao middleware)
+export function hasPermission(user: AuthenticatedRequest['user'], permission: string): boolean {
+  if (!user) return false;
+  return user.permissions?.includes(permission) ?? false;
+}
+
+// Helper para verificar se tem alguma permissao de uma lista
+export function hasAnyPermission(user: AuthenticatedRequest['user'], permissions: string[]): boolean {
+  if (!user) return false;
+  return permissions.some(perm => user.permissions?.includes(perm));
 }

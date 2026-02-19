@@ -1,4 +1,3 @@
-export type Role = 'ADMIN' | 'MANAGER' | 'MEMBER';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type StageName =
   | 'NAO_INICIADO'
@@ -9,11 +8,30 @@ export type StageName =
   | 'FINALIZADO';
 export type StageStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
 
+// Sistema de Permissoes
+export interface Role {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  isSystem?: boolean;
+}
+
+export interface Permission {
+  id: string;
+  key: string;
+  resource: string;
+  action: string;
+  description?: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  active?: boolean;
+  roles: Role[];
+  permissions?: string[];
   createdAt?: string;
 }
 
@@ -86,6 +104,13 @@ export interface Project {
 export interface CreateProjectInput {
   title: string;
   managerId: string;
+  description?: string;
+  priority?: Priority;
+  stages?: {
+    stageName: StageName;
+    plannedStartDate?: string;
+    plannedEndDate?: string;
+  }[];
 }
 
 export interface UpdateProjectInput {
@@ -100,19 +125,19 @@ export interface UpdateProjectInput {
 }
 
 export const STAGE_LABELS: Record<StageName, string> = {
-  NAO_INICIADO: 'Não Iniciado',
-  MODELAGEM_NEGOCIO: 'Modelagem de Negócio',
+  NAO_INICIADO: 'Nao Iniciado',
+  MODELAGEM_NEGOCIO: 'Modelagem de Negocio',
   MODELAGEM_TI: 'Modelagem de TI',
   DESENVOLVIMENTO: 'Desenvolvimento',
-  HOMOLOGACAO: 'Homologação',
+  HOMOLOGACAO: 'Homologacao',
   FINALIZADO: 'Finalizado',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
   LOW: 'Baixa',
-  MEDIUM: 'Média',
+  MEDIUM: 'Media',
   HIGH: 'Alta',
-  CRITICAL: 'Crítica',
+  CRITICAL: 'Critica',
 };
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
@@ -137,3 +162,27 @@ export const STAGE_ORDER: StageName[] = [
   'HOMOLOGACAO',
   'FINALIZADO',
 ];
+
+// Labels para recursos
+export const RESOURCE_LABELS: Record<string, string> = {
+  users: 'Usuarios',
+  roles: 'Perfis',
+  projects: 'Projetos',
+  stages: 'Etapas',
+  trash: 'Lixeira',
+  reports: 'Relatorios',
+  settings: 'Configuracoes',
+};
+
+// Labels para acoes
+export const ACTION_LABELS: Record<string, string> = {
+  read: 'Visualizar',
+  create: 'Criar',
+  update: 'Editar',
+  delete: 'Excluir',
+  manage: 'Gerenciar',
+  complete: 'Concluir',
+  block: 'Bloquear',
+  export: 'Exportar',
+  restore: 'Restaurar',
+};

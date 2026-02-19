@@ -1,13 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Role } from '../types';
 
 interface ProtectedRouteProps {
-  allowedRoles?: Role[];
+  requiredPermissions?: string[];
+  requireAll?: boolean; // Se true, requer todas as permissoes. Se false, requer pelo menos uma.
 }
 
-export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+export function ProtectedRoute({ requiredPermissions, requireAll = false }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, hasPermission, hasAllPermissions } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,8 +21,14 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+  if (requiredPermissions && requiredPermissions.length > 0) {
+    const hasAccess = requireAll
+      ? hasAllPermissions(...requiredPermissions)
+      : hasPermission(...requiredPermissions);
+
+    if (!hasAccess) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <Outlet />;
