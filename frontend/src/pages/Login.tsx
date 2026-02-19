@@ -71,12 +71,6 @@ export function Login() {
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Usuários de teste:</p>
-            <p>admin@sistema.com / admin123</p>
-            <p>gerente@sistema.com / gerente123</p>
-            <p>membro@sistema.com / membro123</p>
-          </div>
         </CardContent>
       </Card>
     </div>
