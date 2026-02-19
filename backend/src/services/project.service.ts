@@ -56,11 +56,20 @@ export async function createProject(
   },
   adminUserId: string
 ) {
-  const manager = await prisma.user.findUnique({ where: { id: input.managerId } });
+  const manager = await prisma.user.findUnique({
+    where: { id: input.managerId },
+    include: {
+      roles: {
+        include: { role: true }
+      }
+    }
+  });
   if (!manager) {
     throw new Error('Gerente não encontrado');
   }
-  if (manager.role !== 'MANAGER') {
+  const managerRoles = manager.roles.map(ur => ur.role.name);
+  const isManager = managerRoles.some(r => ['MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(r));
+  if (!isManager) {
     throw new Error('Usuário selecionado não é um gerente');
   }
 
