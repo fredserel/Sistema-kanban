@@ -1,19 +1,29 @@
+# ---- Build stage ----
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY apps/api/package.json apps/api/package-lock.json* ./
+
+RUN npm ci
+
+COPY apps/api/src ./src
+COPY apps/api/tsconfig.json apps/api/tsconfig.build.json apps/api/nest-cli.json* ./
+
+RUN npm run build
+
+# ---- Production stage ----
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar arquivos de dependência
-COPY apps/api/package.json apps/api/package-lock.json* ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
 
-# Instalar dependências com npm
-RUN npm install
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
-# Copiar código fonte (excluindo node_modules via .dockerignore)
-COPY apps/api/src ./src
-COPY apps/api/tsconfig.json apps/api/nest-cli.json* ./
-
-# Expor porta
 EXPOSE 3001
 
-# Comando de desenvolvimento
-CMD ["npm", "run", "dev"]
+CMD ["node", "dist/main.js"]

@@ -12,10 +12,10 @@ export class RegisterDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'senha123' })
+  @ApiProperty({ example: '********' })
   @IsString()
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
   password: string;
 
   @ApiPropertyOptional({ example: ['uuid-role-1', 'uuid-role-2'] })

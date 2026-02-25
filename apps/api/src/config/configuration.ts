@@ -1,22 +1,32 @@
+const isProduction = process.env.NODE_ENV === 'production';
+
+function requireEnv(key: string, fallback?: string): string {
+  const value = process.env[key] || fallback;
+  if (!value && isProduction) {
+    throw new Error(`Environment variable ${key} is required in production`);
+  }
+  return value || fallback || '';
+}
+
 export default () => ({
   port: parseInt(process.env.PORT || '3001', 10),
 
   database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306', 10),
-    username: process.env.DB_USERNAME || 'app_user',
-    password: process.env.DB_PASSWORD || 'app_pass',
-    name: process.env.DB_NAME || 'kanban_db',
+    host: requireEnv('DB_HOST', 'localhost'),
+    port: parseInt(requireEnv('DB_PORT', '3306'), 10),
+    username: requireEnv('DB_USERNAME', isProduction ? undefined : 'kanban'),
+    password: requireEnv('DB_PASSWORD', isProduction ? undefined : 'kanban123'),
+    name: requireEnv('DB_NAME', 'kanban_db'),
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'super-secret-jwt-key',
+    secret: requireEnv('JWT_SECRET', isProduction ? undefined : 'dev-jwt-secret-do-not-use-in-production'),
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'super-secret-refresh-key',
+    refreshSecret: requireEnv('JWT_REFRESH_SECRET', process.env.JWT_SECRET || (isProduction ? undefined : 'dev-refresh-secret')),
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },
 
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: requireEnv('CORS_ORIGIN', isProduction ? undefined : 'http://localhost:3000'),
   },
 });

@@ -1,12 +1,16 @@
 import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { LoginDto, RegisterDto } from './dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 export interface AuthResponse {
   user: Partial<User>;
@@ -24,6 +28,7 @@ export class AuthService {
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -32,25 +37,54 @@ export class AuthService {
       relations: ['roles', 'roles.permissions'],
     });
 
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return null;
-    }
+    if (!isPasswordValid) return null;
 
     return user;
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    const user = await this.userRepository.findOne({
+      where: { email: loginDto.email, isActive: true },
+      relations: ['roles', 'roles.permissions'],
+    });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciais invalidas');
     }
+
+    // Check if account is locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(
+        `Conta bloqueada. Tente novamente em ${minutesLeft} minuto(s).`,
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+
+    if (!isPasswordValid) {
+      // Increment failed attempts
+      user.failedLoginAttempts += 1;
+
+      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+        user.lockedUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
+        this.logger.warn(`Account locked for ${loginDto.email} after ${MAX_FAILED_ATTEMPTS} failed attempts`);
+      }
+
+      await this.userRepository.save(user);
+      throw new UnauthorizedException('Credenciais invalidas');
+    }
+
+    // Reset failed attempts on successful login
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
+    }
+    user.lastLogin = new Date();
+    await this.userRepository.save(user);
 
     const tokens = this.generateTokens(user);
 
@@ -129,7 +163,7 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     try {
       const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+        secret: this.configService.get<string>('jwt.refreshSecret'),
       });
 
       const user = await this.userRepository.findOne({
@@ -161,8 +195,8 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      expiresIn: '30d',
+      secret: this.configService.get<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn', '30d'),
     });
 
     return { accessToken, refreshToken };

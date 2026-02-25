@@ -1,23 +1,34 @@
-FROM node:20-alpine
+# ---- Build stage ----
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar arquivos de dependência
 COPY apps/web/package.json apps/web/package-lock.json* ./
 
-# Instalar dependências com npm
-RUN npm install
+RUN npm ci
 
-# Copiar código fonte (excluindo node_modules)
 COPY apps/web/src ./src
 COPY apps/web/public ./public
 COPY apps/web/tsconfig.json apps/web/next.config.js apps/web/tailwind.config.ts apps/web/postcss.config.js apps/web/components.json ./
 
-# Copiar variáveis de ambiente para o frontend
-COPY apps/web/.env.local ./.env.local
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Expor porta
+RUN npm run build
+
+# ---- Production stage ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 EXPOSE 3000
 
-# Comando de desenvolvimento
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

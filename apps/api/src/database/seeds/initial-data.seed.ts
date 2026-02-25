@@ -101,8 +101,8 @@ const ROLES = [
   },
 ];
 
-// Test users
-const USERS = [
+// Test users (development only)
+const DEV_USERS = [
   {
     name: 'Administrador',
     email: 'admin@sistema.com',
@@ -190,40 +190,49 @@ export async function seedDatabase(dataSource: DataSource): Promise<void> {
   }
   console.log(`Created ${Object.keys(roleEntities).length} roles`);
 
-  // Create users
-  console.log('Creating users...');
-  let usersCreated = 0;
+  // Create test users (development only)
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction) {
+    console.log('Skipping test user creation in production environment');
+  } else {
+    console.log('Creating development users...');
+    let usersCreated = 0;
 
-  for (const userData of USERS) {
-    let user = await userRepo.findOne({ where: { email: userData.email } });
+    for (const userData of DEV_USERS) {
+      let user = await userRepo.findOne({ where: { email: userData.email } });
 
-    if (!user) {
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      if (!user) {
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-      user = userRepo.create({
-        name: userData.name,
-        email: userData.email,
-        password: hashedPassword,
-        isSuperAdmin: userData.isSuperAdmin,
-        roles: userData.roles.map(slug => roleEntities[slug]).filter(Boolean),
-      });
+        user = userRepo.create({
+          name: userData.name,
+          email: userData.email,
+          password: hashedPassword,
+          isSuperAdmin: userData.isSuperAdmin,
+          roles: userData.roles.map(slug => roleEntities[slug]).filter(Boolean),
+        });
 
-      await userRepo.save(user);
-      usersCreated++;
+        await userRepo.save(user);
+        usersCreated++;
+      }
     }
+    console.log(`Created ${usersCreated} development users`);
   }
-  console.log(`Created ${usersCreated} users`);
 
   console.log('Database seed completed!');
 }
 
 export async function runSeed(): Promise<void> {
+  if (!process.env.DB_HOST || !process.env.DB_USERNAME || !process.env.DB_PASSWORD) {
+    throw new Error('DB_HOST, DB_USERNAME and DB_PASSWORD environment variables are required to run seeds');
+  }
+
   const dataSource = new DataSource({
     type: 'mariadb',
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '3306', 10),
-    username: process.env.DB_USERNAME || 'kanban',
-    password: process.env.DB_PASSWORD || 'kanban123',
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'kanban_db',
     entities: [Permission, Role, User, Project, ProjectStage, ProjectMember, Comment, AuditLog, Setting],
     synchronize: true,

@@ -9,11 +9,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'mariadb',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 3306),
-        username: configService.get('DB_USERNAME', 'kanban_user'),
-        password: configService.get('DB_PASSWORD', 'kanban_pass'),
-        database: configService.get('DB_NAME', 'kanban_db'),
+        host: configService.get('database.host'),
+        port: configService.get<number>('database.port'),
+        username: configService.get('database.username'),
+        password: configService.get('database.password'),
+        database: configService.get('database.name'),
 
         // Entities
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
