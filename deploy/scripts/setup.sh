@@ -29,18 +29,18 @@ echo "  CONECTENVIOS - Setup Inicial"
 echo "========================================"
 echo ""
 
-# Verificar se Docker está instalado
+# Verificar se Docker esta instalado
 if ! command -v docker &> /dev/null; then
-    log_error "Docker não encontrado. Instalando..."
+    log_error "Docker nao encontrado. Instalando..."
     curl -fsSL https://get.docker.com | sh
     sudo usermod -aG docker $USER
-    log_warn "Docker instalado. Faça logout e login novamente, depois execute este script novamente."
+    log_warn "Docker instalado. Faca logout e login novamente, depois execute este script novamente."
     exit 1
 fi
 
-# Verificar se Docker Compose está instalado
+# Verificar se Docker Compose esta instalado
 if ! docker compose version &> /dev/null; then
-    log_error "Docker Compose não encontrado."
+    log_error "Docker Compose nao encontrado."
     log_info "Instale com: sudo apt install docker-compose-plugin"
     exit 1
 fi
@@ -53,26 +53,29 @@ cd "$DEPLOY_DIR"
 if [ ! -f ".env" ]; then
     log_info "Criando arquivo .env..."
 
-    # Gerar senhas aleatórias
+    # Gerar senhas aleatorias
     DB_ROOT_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 24)
     DB_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 24)
-    JWT_SECRET=$(openssl rand -base64 64)
+    JWT_SEC=$(openssl rand -base64 64)
+    JWT_REFRESH_SEC=$(openssl rand -base64 64)
 
     cat > .env << EOF
 # ===========================================
-# CONECTENVIOS - CONFIGURAÇÃO DE PRODUÇÃO
+# CONECTENVIOS - CONFIGURACAO DE PRODUCAO
 # Gerado automaticamente em $(date)
 # ===========================================
 
 # DATABASE (MariaDB)
 DB_ROOT_PASSWORD=${DB_ROOT_PASS}
-DB_USER=conectenvios_user
+DB_USERNAME=conectenvios_user
 DB_PASSWORD=${DB_PASS}
 DB_NAME=conectenvios_db
 
 # JWT
-JWT_SECRET=${JWT_SECRET}
-JWT_EXPIRES_IN=24h
+JWT_SECRET=${JWT_SEC}
+JWT_REFRESH_SECRET=${JWT_REFRESH_SEC}
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=30d
 
 # DOMAIN
 DOMAIN=kanban.conectenvios.com.br
@@ -86,33 +89,31 @@ EOF
     echo "  DB_PASSWORD: ${DB_PASS}"
     echo ""
 else
-    log_info "Arquivo .env já existe"
+    log_info "Arquivo .env ja existe"
 fi
 
-# Carregar variáveis
+# Carregar variaveis
 source .env
 
-# Criar diretórios necessários
+# Criar diretorios necessarios
 mkdir -p certbot/conf certbot/www backups
-log_success "Diretórios criados"
+log_success "Diretorios criados"
 
-# Verificar se é primeira instalação ou atualização
+# Verificar se e primeira instalacao ou atualizacao
 if [ "$1" == "--update" ]; then
-    log_info "Modo atualização - pulando SSL"
+    log_info "Modo atualizacao"
 
     log_info "Atualizando containers..."
-    docker compose -f docker-compose.prod.yml pull 2>/dev/null || true
     docker compose -f docker-compose.prod.yml build --no-cache
     docker compose -f docker-compose.prod.yml up -d
 
-    log_info "Executando migrations..."
-    sleep 10
-    docker compose -f docker-compose.prod.yml exec -T backend npx prisma migrate deploy
+    log_info "Aguardando API iniciar..."
+    sleep 15
 
-    log_success "Atualização concluída!"
+    log_success "Atualizacao concluida!"
 else
-    # Instalação inicial
-    log_info "Iniciando instalação inicial..."
+    # Instalacao inicial
+    log_info "Iniciando instalacao inicial..."
 
     # Usar config sem SSL primeiro
     log_info "Configurando NGINX inicial (sem SSL)..."
@@ -129,24 +130,29 @@ else
     log_info "Aguardando banco de dados..."
     sleep 15
 
-    # Executar migrations
-    log_info "Executando migrations..."
-    docker compose -f docker-compose.prod.yml exec -T backend npx prisma migrate deploy
+    # Executar seed (permissions e roles apenas - usuarios de teste sao ignorados em producao)
+    log_info "Criando permissoes e perfis iniciais..."
+    docker compose -f docker-compose.prod.yml exec -T api node -e "
+      require('./dist/database/seeds/initial-data.seed').seedDatabase(
+        require('typeorm').default
+      )
+    " 2>/dev/null || log_warn "Seed sera executado na primeira inicializacao da API"
 
-    # Executar seed
-    log_info "Criando dados iniciais..."
-    docker compose -f docker-compose.prod.yml exec -T backend npx tsx prisma/seed.ts
-
-    log_success "Instalação base concluída!"
+    log_success "Instalacao base concluida!"
 
     echo ""
-    log_warn "PRÓXIMO PASSO: Configurar SSL"
+    log_warn "PROXIMO PASSO: Criar usuario administrador"
     echo ""
-    echo "1. Certifique-se que o DNS aponta para este servidor:"
-    echo "   dig $DOMAIN"
+    echo "  Acesse a API e use o endpoint POST /api/v1/auth/register"
+    echo "  para criar o primeiro usuario super admin."
     echo ""
-    echo "2. Execute o script de SSL:"
-    echo "   ./scripts/init-ssl.sh"
+    log_warn "PROXIMO PASSO: Configurar SSL"
+    echo ""
+    echo "  1. Certifique-se que o DNS aponta para este servidor:"
+    echo "     dig $DOMAIN"
+    echo ""
+    echo "  2. Execute o script de SSL:"
+    echo "     ./scripts/init-ssl.sh"
     echo ""
 fi
 
@@ -157,13 +163,9 @@ docker compose -f docker-compose.prod.yml ps
 
 echo ""
 log_success "========================================"
-log_success "  Setup concluído!"
+log_success "  Setup concluido!"
 log_success "========================================"
 echo ""
-echo "Usuários padrão:"
-echo "  admin@sistema.com / admin123 (Super Admin)"
-echo "  gerente@sistema.com / gerente123 (Gerente)"
-echo "  membro@sistema.com / membro123 (Operador)"
-echo ""
-echo "IMPORTANTE: Altere as senhas padrão após o primeiro login!"
+echo "Em producao, usuarios de teste NAO sao criados."
+echo "Crie o primeiro administrador via API ou acesso direto ao banco."
 echo ""

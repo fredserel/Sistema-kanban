@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mariadb:
     image: mariadb:10.11
@@ -7,7 +5,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
+      MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -21,17 +19,24 @@ services:
     networks:
       - conectenvios_network
 
-  backend:
+  api:
     build:
-      context: ../backend
-      dockerfile: ../deploy/Dockerfile.backend
-    container_name: conectenvios_backend
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: conectenvios_api
     environment:
-      DATABASE_URL: mysql://${DB_USER}:${DB_PASSWORD}@mariadb:3306/${DB_NAME}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      PORT: 3001
       NODE_ENV: production
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      CORS_ORIGIN: https://${DOMAIN}
+      API_PORT: 3001
     depends_on:
       mariadb:
         condition: service_healthy
@@ -39,13 +44,13 @@ services:
     networks:
       - conectenvios_network
 
-  frontend:
+  web:
     build:
-      context: ../frontend
-      dockerfile: ../deploy/Dockerfile.frontend
+      context: ..
+      dockerfile: docker/Dockerfile.web
       args:
-        VITE_API_URL: https://kanban.conectenvios.com.br/api
-    container_name: conectenvios_frontend
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api/v1
+    container_name: conectenvios_web
     restart: always
     networks:
       - conectenvios_network
@@ -62,8 +67,8 @@ services:
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
-      - backend
-      - frontend
+      - api
+      - web
     restart: always
     networks:
       - conectenvios_network

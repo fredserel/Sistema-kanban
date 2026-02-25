@@ -13,7 +13,7 @@ server {
 
     # Temporary: serve without SSL until certificate is generated
     location /api {
-        proxy_pass http://backend:3001;
+        proxy_pass http://api:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -22,7 +22,7 @@ server {
     }
 
     location / {
-        proxy_pass http://frontend:80;
+        proxy_pass http://web:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

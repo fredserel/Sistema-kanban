@@ -1,13 +1,13 @@
-# Instalação Rápida - Conectenvios
+# Instalacao Rapida - Conectenvios
 
 ## Requisitos
 
 - Ubuntu 22.04+ ou Debian 12+
-- 2GB RAM mínimo
+- 2GB RAM minimo
 - 20GB disco
-- Domínio apontando para o servidor
+- Dominio apontando para o servidor
 
-## Instalação em 3 Passos
+## Instalacao em 3 Passos
 
 ### 1. Clonar e Entrar
 
@@ -23,12 +23,11 @@ chmod +x scripts/*.sh
 ./scripts/setup.sh
 ```
 
-O script irá:
-- Instalar Docker (se necessário)
-- Gerar senhas automaticamente
-- Criar containers
-- Executar migrations
-- Criar usuários padrão
+O script ira:
+- Instalar Docker (se necessario)
+- Gerar senhas automaticamente (DB, JWT, Refresh Token)
+- Criar containers (MariaDB, API, Web, Nginx)
+- Criar permissoes e perfis iniciais
 
 ### 3. Configurar SSL
 
@@ -36,23 +35,23 @@ O script irá:
 ./scripts/init-ssl.sh
 ```
 
-## Pronto!
+## Primeiro Acesso
 
-Acesse: **https://kanban.conectenvios.com.br**
+Em producao, usuarios de teste **NAO** sao criados automaticamente.
+Apos a instalacao, crie o primeiro administrador:
 
-### Usuários Padrão
+1. Acesse o banco via Docker:
+```bash
+docker exec -it conectenvios_mariadb mysql -u conectenvios_user -p conectenvios_db
+```
 
-| Email | Senha | Perfil |
-|-------|-------|--------|
-| admin@sistema.com | admin123 | Super Admin |
-| gerente@sistema.com | gerente123 | Gerente |
-| membro@sistema.com | membro123 | Operador |
+2. Ou use a API diretamente para registrar o admin inicial.
 
-**IMPORTANTE:** Altere as senhas após o primeiro login!
+**IMPORTANTE:** Use senhas fortes para o primeiro administrador!
 
 ---
 
-## Comandos Úteis
+## Comandos Uteis
 
 ```bash
 # Ver status
@@ -61,13 +60,34 @@ docker compose -f docker-compose.prod.yml ps
 # Ver logs
 docker compose -f docker-compose.prod.yml logs -f
 
+# Ver logs da API
+docker compose -f docker-compose.prod.yml logs -f api
+
 # Backup
 ./scripts/backup.sh
 
 # Atualizar
 git pull && ./scripts/setup.sh --update
+
+# Reiniciar
+docker compose -f docker-compose.prod.yml restart
 ```
+
+## Variaveis de Ambiente
+
+As credenciais sao geradas automaticamente pelo `setup.sh` e salvas em `deploy/.env`.
+
+| Variavel | Descricao |
+|----------|-----------|
+| `DB_ROOT_PASSWORD` | Senha root do MariaDB |
+| `DB_USERNAME` | Usuario do banco |
+| `DB_PASSWORD` | Senha do banco |
+| `DB_NAME` | Nome do banco |
+| `JWT_SECRET` | Chave secreta para tokens JWT |
+| `JWT_REFRESH_SECRET` | Chave secreta para refresh tokens |
+| `DOMAIN` | Dominio da aplicacao |
+| `CERTBOT_EMAIL` | Email para certificado SSL |
 
 ## Suporte
 
-Documentação completa: [README.md](README.md)
+Documentacao completa: [README.md](README.md)
