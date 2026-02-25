@@ -1,0 +1,26 @@
+{
+  "name": "sistema-kanban",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "clean": "turbo clean && rm -rf node_modules",
+    "api:dev": "pnpm --filter @kanban/api dev",
+    "web:dev": "pnpm --filter @kanban/web dev",
+    "db:migrate": "pnpm --filter @kanban/api migration:run",
+    "db:seed": "pnpm --filter @kanban/api seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

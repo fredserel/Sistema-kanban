@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de dependência
+COPY apps/api/package.json apps/api/package-lock.json* ./
+
+# Instalar dependências com npm
+RUN npm install
+
+# Copiar código fonte (excluindo node_modules via .dockerignore)
+COPY apps/api/src ./src
+COPY apps/api/tsconfig.json apps/api/nest-cli.json* ./
+
+# Expor porta
+EXPOSE 3001
+
+# Comando de desenvolvimento
+CMD ["npm", "run", "dev"]

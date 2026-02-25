@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de dependência
+COPY apps/web/package.json apps/web/package-lock.json* ./
+
+# Instalar dependências com npm
+RUN npm install
+
+# Copiar código fonte (excluindo node_modules)
+COPY apps/web/src ./src
+COPY apps/web/public ./public
+COPY apps/web/tsconfig.json apps/web/next.config.js apps/web/tailwind.config.ts apps/web/postcss.config.js apps/web/components.json ./
+
+# Copiar variáveis de ambiente para o frontend
+COPY apps/web/.env.local ./.env.local
+
+# Expor porta
+EXPOSE 3000
+
+# Comando de desenvolvimento
+CMD ["npm", "run", "dev"]
