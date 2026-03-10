@@ -74,9 +74,17 @@ export default function KanbanPage() {
     loadProjects();
   };
 
-  const handleProjectUpdated = () => {
-    setSelectedProject(null);
-    loadProjects();
+  const handleProjectUpdated = async () => {
+    try {
+      const [data, updatedProject] = await Promise.all([
+        projectsService.getAll(),
+        selectedProject ? projectsService.getById(selectedProject.id) : null,
+      ]);
+      setProjects(data);
+      if (updatedProject) setSelectedProject(updatedProject);
+    } catch (err) {
+      console.error('Error reloading projects:', err);
+    }
   };
 
   const handleProjectDeleted = () => {

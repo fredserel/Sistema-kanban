@@ -99,7 +99,11 @@ export function ProjectDetailModal({
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [stageToBlock, setStageToBlock] = useState<string | null>(null);
   const [editingStageDate, setEditingStageDate] = useState<string | null>(null);
+  const [editingDateValue, setEditingDateValue] = useState<string>('');
   const [savingStageDate, setSavingStageDate] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(project.title);
+  const [savingTitle, setSavingTitle] = useState(false);
 
   const priority = priorityConfig[project.priority];
   const currentStage = stageConfig[project.currentStage];
@@ -107,6 +111,30 @@ export function ProjectDetailModal({
   useEffect(() => {
     setComments(project.comments || []);
   }, [project.comments]);
+
+  useEffect(() => {
+    setTitleValue(project.title);
+  }, [project.title]);
+
+  const handleSaveTitle = async () => {
+    const trimmed = titleValue.trim();
+    if (!trimmed || trimmed === project.title) {
+      setTitleValue(project.title);
+      setEditingTitle(false);
+      return;
+    }
+    setSavingTitle(true);
+    try {
+      await projectsService.update(project.id, { title: trimmed });
+      onUpdated?.();
+    } catch (err) {
+      console.error('Error updating title:', err);
+      setTitleValue(project.title);
+    } finally {
+      setSavingTitle(false);
+      setEditingTitle(false);
+    }
+  };
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -241,11 +269,61 @@ export function ProjectDetailModal({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={(value) => {
+        if (!value && (editingStageDate || editingTitle)) return;
+        onOpenChange(value);
+      }}>
+        <DialogContent
+          className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => {
+            if (editingStageDate || editingTitle) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (editingStageDate || editingTitle) e.preventDefault();
+          }}
+          onFocusOutside={(e) => {
+            if (editingStageDate || editingTitle) e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <div className="space-y-1 pr-6">
-              <DialogTitle className="text-xl">{project.title}</DialogTitle>
+              {editingTitle ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveTitle();
+                      if (e.key === 'Escape') { setTitleValue(project.title); setEditingTitle(false); }
+                    }}
+                    disabled={savingTitle}
+                    className="text-xl font-semibold border-b-2 border-primary bg-transparent outline-none flex-1"
+                    autoFocus
+                  />
+                  {savingTitle ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  ) : (
+                    <>
+                      <button onClick={handleSaveTitle} className="text-green-500 hover:text-green-700">
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => { setTitleValue(project.title); setEditingTitle(false); }} className="text-gray-400 hover:text-gray-600">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <DialogTitle
+                  className="text-xl cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => setEditingTitle(true)}
+                  title="Clique para editar"
+                >
+                  {project.title}
+                  <Edit className="h-3.5 w-3.5 inline ml-2 opacity-40" />
+                </DialogTitle>
+              )}
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className={priority.className}>
                   {priority.label}
@@ -260,7 +338,7 @@ export function ProjectDetailModal({
               <TabsTrigger value="details">Detalhes</TabsTrigger>
               <TabsTrigger value="stages">Etapas</TabsTrigger>
               <TabsTrigger value="comments">
-                Comentários ({project.comments?.length || 0})
+                Comentários ({comments.length})
               </TabsTrigger>
             </TabsList>
 
@@ -458,14 +536,22 @@ export function ProjectDetailModal({
                           <Calendar className="h-3.5 w-3.5 text-gray-500" />
                           <input
                             type="date"
-                            defaultValue={stage.plannedEndDate ? stage.plannedEndDate.split('T')[0] : ''}
-                            onChange={(e) => handleStagePlannedDate(stage.id, e.target.value)}
+                            value={editingDateValue}
+                            onChange={(e) => setEditingDateValue(e.target.value)}
                             disabled={savingStageDate === stage.id}
                             className="border rounded px-2 py-0.5 text-xs bg-white dark:bg-gray-900"
                             autoFocus
                           />
-                          {savingStageDate === stage.id && (
+                          {savingStageDate === stage.id ? (
                             <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                          ) : (
+                            <button
+                              onClick={() => handleStagePlannedDate(stage.id, editingDateValue)}
+                              className="text-green-500 hover:text-green-700"
+                              title="Salvar data"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
                           )}
                           <button
                             onClick={() => setEditingStageDate(null)}
@@ -476,7 +562,10 @@ export function ProjectDetailModal({
                         </div>
                       ) : stage.plannedEndDate ? (
                         <button
-                          onClick={() => setEditingStageDate(stage.id)}
+                          onClick={() => {
+                            setEditingDateValue(stage.plannedEndDate ? stage.plannedEndDate.split('T')[0] : '');
+                            setEditingStageDate(stage.id);
+                          }}
                           className={cn(
                             'flex items-center gap-1 hover:underline',
                             stage.status !== StageStatus.COMPLETED &&
@@ -494,7 +583,10 @@ export function ProjectDetailModal({
                         </button>
                       ) : (
                         <button
-                          onClick={() => setEditingStageDate(stage.id)}
+                          onClick={() => {
+                            setEditingDateValue('');
+                            setEditingStageDate(stage.id);
+                          }}
                           className="flex items-center gap-1 text-gray-400 hover:text-gray-600"
                         >
                           <Calendar className="h-3.5 w-3.5" />
