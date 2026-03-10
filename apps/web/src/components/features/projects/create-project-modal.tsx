@@ -71,8 +71,9 @@ export function CreateProjectModal({ open, onOpenChange, onSuccess }: CreateProj
       reset();
       onSuccess?.();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Erro ao criar projeto');
+      const error = err as { response?: { data?: { error?: { message?: string }; message?: string } } };
+      const msg = error.response?.data?.error?.message || error.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Erro ao criar projeto');
     } finally {
       setIsLoading(false);
     }

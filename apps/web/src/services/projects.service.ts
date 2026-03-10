@@ -42,6 +42,10 @@ export interface ProjectStage {
   projectId: string;
   stageName: StageName;
   status: StageStatus;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
+  actualStartDate?: string;
+  actualEndDate?: string;
   startedAt?: string;
   completedAt?: string;
   blockedAt?: string;

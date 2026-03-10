@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   CalendarDays,
+  Calendar,
   User,
   Users,
   MessageSquare,
@@ -97,6 +98,8 @@ export function ProjectDetailModal({
   const [blockReason, setBlockReason] = useState('');
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [stageToBlock, setStageToBlock] = useState<string | null>(null);
+  const [editingStageDate, setEditingStageDate] = useState<string | null>(null);
+  const [savingStageDate, setSavingStageDate] = useState<string | null>(null);
 
   const priority = priorityConfig[project.priority];
   const currentStage = stageConfig[project.currentStage];
@@ -108,10 +111,10 @@ export function ProjectDetailModal({
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const users = await usersService.getAll();
+        const response = await usersService.getAll();
         // Filter out users who are already members
         const memberIds = project.members?.map(m => m.userId) || [];
-        const filtered = users.filter(u => !memberIds.includes(u.id) && u.id !== project.ownerId);
+        const filtered = response.data.filter(u => !memberIds.includes(u.id) && u.id !== project.ownerId);
         setAvailableUsers(filtered);
       } catch (err) {
         console.error('Error loading users:', err);
@@ -198,6 +201,21 @@ export function ProjectDetailModal({
       console.error('Error unblocking stage:', err);
     } finally {
       setStageActionLoading(null);
+    }
+  };
+
+  const handleStagePlannedDate = async (stageId: string, date: string) => {
+    setSavingStageDate(stageId);
+    try {
+      await stagesService.update(stageId, {
+        plannedEndDate: date || undefined,
+      });
+      onUpdated?.();
+    } catch (err) {
+      console.error('Error updating planned date:', err);
+    } finally {
+      setSavingStageDate(null);
+      setEditingStageDate(null);
     }
   };
 
@@ -433,6 +451,62 @@ export function ProjectDetailModal({
                           </Button>
                         )}
                       </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                      {editingStageDate === stage.id ? (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5 text-gray-500" />
+                          <input
+                            type="date"
+                            defaultValue={stage.plannedEndDate ? stage.plannedEndDate.split('T')[0] : ''}
+                            onChange={(e) => handleStagePlannedDate(stage.id, e.target.value)}
+                            disabled={savingStageDate === stage.id}
+                            className="border rounded px-2 py-0.5 text-xs bg-white dark:bg-gray-900"
+                            autoFocus
+                          />
+                          {savingStageDate === stage.id && (
+                            <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                          )}
+                          <button
+                            onClick={() => setEditingStageDate(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : stage.plannedEndDate ? (
+                        <button
+                          onClick={() => setEditingStageDate(stage.id)}
+                          className={cn(
+                            'flex items-center gap-1 hover:underline',
+                            stage.status !== StageStatus.COMPLETED &&
+                              new Date(stage.plannedEndDate) < new Date()
+                              ? 'text-red-600 font-medium'
+                              : 'text-gray-500'
+                          )}
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          Prazo: {format(new Date(stage.plannedEndDate), 'dd/MM/yyyy')}
+                          {stage.status !== StageStatus.COMPLETED &&
+                            new Date(stage.plannedEndDate) < new Date() && (
+                              <AlertTriangle className="h-3 w-3 ml-0.5" />
+                            )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingStageDate(stage.id)}
+                          className="flex items-center gap-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          Definir prazo
+                        </button>
+                      )}
+                      {stage.actualEndDate && (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          Real: {format(new Date(stage.actualEndDate), 'dd/MM/yyyy')}
+                        </span>
+                      )}
                     </div>
                     {stage.blockReason && (
                       <p className="text-sm text-red-600 mt-2">

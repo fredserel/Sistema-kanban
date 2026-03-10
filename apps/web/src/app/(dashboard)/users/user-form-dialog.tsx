@@ -20,10 +20,16 @@ import { useCreateUser, useUpdateUser } from '@/hooks/queries/use-users';
 import { useRoles } from '@/hooks/queries/use-roles';
 import { User } from '@/services/users.service';
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]+$/;
+
 const userSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
+  password: z.string()
+    .min(8, 'Senha deve ter no mínimo 8 caracteres')
+    .regex(passwordRegex, 'Senha deve conter maiúscula, minúscula e número')
+    .optional()
+    .or(z.literal('')),
   phone: z.string().optional(),
   isActive: z.boolean(),
   roleIds: z.array(z.string()),
@@ -54,10 +60,16 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     resolver: zodResolver(
       isEditing
         ? userSchema.omit({ password: true }).extend({
-            password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
+            password: z.string()
+              .min(8, 'Senha deve ter no mínimo 8 caracteres')
+              .regex(passwordRegex, 'Senha deve conter maiúscula, minúscula e número')
+              .optional()
+              .or(z.literal('')),
           })
         : userSchema.extend({
-            password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+            password: z.string()
+              .min(8, 'Senha deve ter no mínimo 8 caracteres')
+              .regex(passwordRegex, 'Senha deve conter maiúscula, minúscula e número'),
           })
     ),
     defaultValues: {
@@ -170,6 +182,9 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               Senha {isEditing && '(deixe em branco para manter)'}
             </Label>
             <Input id="password" type="password" {...register('password')} />
+            <p className="text-xs text-muted-foreground">
+              Min. 8 caracteres, com maiúscula, minúscula e número
+            </p>
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
             )}

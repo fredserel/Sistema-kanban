@@ -3,13 +3,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY apps/web/package.json apps/web/package-lock.json* ./
-
-RUN npm ci
+COPY apps/web/package.json ./
+RUN npm install
 
 COPY apps/web/src ./src
 COPY apps/web/public ./public
-COPY apps/web/tsconfig.json apps/web/next.config.js apps/web/tailwind.config.ts apps/web/postcss.config.js apps/web/components.json ./
+COPY apps/web/next.config.js apps/web/postcss.config.js apps/web/tailwind.config.ts apps/web/tsconfig.json apps/web/components.json ./
 
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}

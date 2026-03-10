@@ -68,12 +68,29 @@ export const usersService = {
   },
 
   create: async (data: CreateUserDto): Promise<User> => {
-    const response = await apiClient.post<ApiResponse<User>>('/users', data);
-    return response.data.data;
+    const { roleIds, ...userData } = data;
+    const response = await apiClient.post<ApiResponse<User>>('/users', userData);
+    const user = response.data.data;
+
+    // Assign roles separately if provided
+    if (roleIds && roleIds.length > 0) {
+      const rolesResponse = await apiClient.put<ApiResponse<User>>(`/users/${user.id}/roles`, { roleIds });
+      return rolesResponse.data.data;
+    }
+
+    return user;
   },
 
   update: async (id: string, data: UpdateUserDto): Promise<User> => {
-    const response = await apiClient.put<ApiResponse<User>>(`/users/${id}`, data);
+    const { roleIds, ...userData } = data;
+    const response = await apiClient.put<ApiResponse<User>>(`/users/${id}`, userData);
+
+    // Update roles separately if provided
+    if (roleIds) {
+      const rolesResponse = await apiClient.put<ApiResponse<User>>(`/users/${id}/roles`, { roleIds });
+      return rolesResponse.data.data;
+    }
+
     return response.data.data;
   },
 
