@@ -39,12 +39,15 @@ export class ProjectsService {
     title: string;
     description?: string;
     priority?: Priority;
+    plannedEndDate?: string;
     ownerId: string;
   }): Promise<Project> {
     const project = this.projectRepository.create({
-      ...data,
+      title: data.title,
+      description: data.description,
       priority: data.priority || Priority.MEDIUM,
       currentStage: StageName.NAO_INICIADO,
+      ownerId: data.ownerId,
     });
 
     const savedProject = await this.projectRepository.save(project);
@@ -55,6 +58,9 @@ export class ProjectsService {
         projectId: savedProject.id,
         stageName,
         status: stageName === StageName.NAO_INICIADO ? StageStatus.IN_PROGRESS : StageStatus.PENDING,
+        ...(stageName === StageName.FINALIZADO && data.plannedEndDate
+          ? { plannedEndDate: new Date(data.plannedEndDate) }
+          : {}),
       }),
     );
 

@@ -92,6 +92,7 @@ export interface CreateProjectDto {
   title: string;
   description?: string;
   priority?: Priority;
+  plannedEndDate?: string;
 }
 
 export interface UpdateProjectDto {

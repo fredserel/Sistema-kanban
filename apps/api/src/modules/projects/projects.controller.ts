@@ -31,7 +31,7 @@ export class ProjectsController {
   @Permissions('projects.create')
   @ApiOperation({ summary: 'Create project' })
   create(
-    @Body() data: { title: string; description?: string; priority?: Priority },
+    @Body() data: { title: string; description?: string; priority?: Priority; plannedEndDate?: string },
     @CurrentUser('id') userId: string,
   ) {
     return this.projectsService.create({ ...data, ownerId: userId });

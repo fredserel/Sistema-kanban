@@ -30,6 +30,7 @@ const createProjectSchema = z.object({
   title: z.string().min(3, 'Título deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
   priority: z.nativeEnum(Priority).default(Priority.MEDIUM),
+  plannedEndDate: z.string().optional(),
 });
 
 type CreateProjectFormData = z.infer<typeof createProjectSchema>;
@@ -89,7 +90,11 @@ export function CreateProjectModal({ open, onOpenChange, onSuccess }: CreateProj
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent
+        className="sm:max-w-[500px]"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Novo Projeto</DialogTitle>
           <DialogDescription>
@@ -148,6 +153,16 @@ export function CreateProjectModal({ open, onOpenChange, onSuccess }: CreateProj
                 <SelectItem value={Priority.CRITICAL}>Crítica</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="plannedEndDate">Previsão de Conclusão</Label>
+            <Input
+              id="plannedEndDate"
+              type="date"
+              {...register('plannedEndDate')}
+              disabled={isLoading}
+            />
           </div>
 
           <DialogFooter>

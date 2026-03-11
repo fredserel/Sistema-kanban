@@ -1,10 +1,10 @@
 'use client';
 
-import { CalendarDays, User, AlertTriangle } from 'lucide-react';
+import { CalendarDays, Clock, User, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Project, Priority } from '@/services/projects.service';
+import { Project, Priority, StageName } from '@/services/projects.service';
 import { cn } from '@/lib/utils';
 
 interface ProjectCardProps {
@@ -29,6 +29,22 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     .slice(0, 2) || '??';
 
   const createdDate = new Date(project.createdAt).toLocaleDateString('pt-BR');
+
+  // Data prevista de conclusão = maior plannedEndDate entre os stages
+  const deadlineDate = project.stages
+    ?.map((s) => s.plannedEndDate)
+    .filter(Boolean)
+    .sort()
+    .pop();
+
+  const formattedDeadline = deadlineDate
+    ? new Date(deadlineDate + 'T00:00:00').toLocaleDateString('pt-BR')
+    : null;
+
+  const isOverdue =
+    deadlineDate &&
+    project.currentStage !== StageName.FINALIZADO &&
+    new Date(deadlineDate + 'T23:59:59') < new Date();
 
   return (
     <Card
@@ -60,10 +76,29 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           </Badge>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <CalendarDays className="h-3 w-3" />
-              {createdDate}
-            </div>
+            {formattedDeadline ? (
+              <div
+                className={cn(
+                  'flex items-center gap-1 text-xs',
+                  isOverdue
+                    ? 'text-red-600 dark:text-red-400 font-medium'
+                    : 'text-gray-500 dark:text-gray-400'
+                )}
+                title={isOverdue ? 'Prazo vencido' : 'Previsão de conclusão'}
+              >
+                {isOverdue ? (
+                  <AlertTriangle className="h-3 w-3" />
+                ) : (
+                  <Clock className="h-3 w-3" />
+                )}
+                {formattedDeadline}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <CalendarDays className="h-3 w-3" />
+                {createdDate}
+              </div>
+            )}
           </div>
         </div>
 
