@@ -18,6 +18,7 @@ export interface User {
   lastLogin: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
   roles: Array<{
     id: string;
     slug: string;
@@ -31,6 +32,7 @@ export interface CreateUserDto {
   password: string;
   roleIds?: string[];
   phone?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateUserDto {
@@ -101,6 +103,20 @@ export const usersService = {
   updateRoles: async (id: string, roleIds: string[]): Promise<User> => {
     const response = await apiClient.put<ApiResponse<User>>(`/users/${id}/roles`, { roleIds });
     return response.data.data;
+  },
+
+  getDeleted: async (): Promise<User[]> => {
+    const response = await apiClient.get<ApiResponse<User[]>>('/users/trash');
+    return response.data.data;
+  },
+
+  restore: async (id: string): Promise<User> => {
+    const response = await apiClient.post<ApiResponse<User>>(`/users/${id}/restore`);
+    return response.data.data;
+  },
+
+  permanentDelete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/users/${id}/permanent`);
   },
 };
 

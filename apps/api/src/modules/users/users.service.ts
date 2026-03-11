@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, In, Not, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -26,12 +26,18 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, ...rest } = createUserDto;
 
-    // Check if email exists
+    // Check if email exists (including soft-deleted users)
     const existingUser = await this.usersRepository.findOne({
       where: { email: email.toLowerCase() },
+      withDeleted: true,
     });
 
     if (existingUser) {
+      if (existingUser.deletedAt) {
+        throw new ConflictException(
+          'Este email pertence a um usuário excluído. Restaure o usuário ou use outro email.',
+        );
+      }
       throw new ConflictException('Email já está em uso');
     }
 
@@ -151,6 +157,25 @@ export class UsersService {
     }
 
     return this.usersRepository.save(user);
+  }
+
+  async findDeleted(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: { deletedAt: Not(IsNull()) },
+      withDeleted: true,
+      relations: ['roles'],
+    });
+  }
+
+  async restore(id: string): Promise<User> {
+    await this.usersRepository.restore(id);
+    this.logger.log(`User restored: ${id}`);
+    return this.findOne(id);
+  }
+
+  async permanentDelete(id: string): Promise<void> {
+    await this.usersRepository.delete(id);
+    this.logger.log(`User permanently deleted: ${id}`);
   }
 
   async assignRoles(userId: string, roleIds: string[]): Promise<User> {

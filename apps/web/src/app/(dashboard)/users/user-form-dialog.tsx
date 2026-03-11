@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,6 +48,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const { data: roles } = useRoles();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     register,
@@ -86,6 +87,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
   useEffect(() => {
     if (open) {
+      setApiError(null);
       if (user) {
         reset({
           name: user.name,
@@ -109,6 +111,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   }, [open, user, reset]);
 
   const onSubmit = async (data: UserFormData) => {
+    setApiError(null);
     try {
       if (isEditing) {
         await updateUser.mutateAsync({
@@ -128,12 +131,17 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
           email: data.email,
           password: data.password!,
           phone: data.phone || undefined,
+          isActive: data.isActive,
           roleIds: data.roleIds,
         });
       }
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error saving user:', error);
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.error?.message ||
+        error?.message ||
+        'Erro ao salvar usuário';
+      setApiError(msg);
     }
   };
 
@@ -226,6 +234,12 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               Usuário ativo
             </label>
           </div>
+
+          {apiError && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              {apiError}
+            </div>
+          )}
 
           <DialogFooter>
             <Button

@@ -49,6 +49,13 @@ export class UsersController {
     return this.usersService.findAll(pagination);
   }
 
+  @Get('trash')
+  @Permissions('users.delete')
+  @ApiOperation({ summary: 'List deleted users' })
+  findDeleted() {
+    return this.usersService.findDeleted();
+  }
+
   @Get(':id')
   @Permissions('users.read')
   @ApiOperation({ summary: 'Get user by ID' })
@@ -72,6 +79,21 @@ export class UsersController {
   @ApiOperation({ summary: 'Delete user' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Post(':id/restore')
+  @Permissions('users.delete')
+  @ApiOperation({ summary: 'Restore deleted user' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.restore(id);
+  }
+
+  @Delete(':id/permanent')
+  @Permissions('users.delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Permanently delete user' })
+  permanentDelete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.permanentDelete(id);
   }
 
   @Put(':id/roles')
